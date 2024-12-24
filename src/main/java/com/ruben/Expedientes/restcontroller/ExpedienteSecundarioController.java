@@ -95,10 +95,10 @@ public class ExpedienteSecundarioController {
         return expedienteSecundarioService.saveSecundario(expedienteSecundario);
     }
 
-//    @PutMapping("/{id}")
-//    public ExpedienteSecundario updateExpedienteSecundario(@PathVariable Long id, @RequestBody ExpedienteSecundario expedienteSecundario){
-//        return expedienteSecundarioService.update(id, expedienteSecundario);
-//    }
+    @PutMapping("/{id}")
+    public ExpedienteSecundario updateExpedienteSecundario(@PathVariable Long id, @RequestBody ExpedienteSecundario expedienteSecundario){
+        return expedienteSecundarioService.update(id, expedienteSecundario);
+    }
 
     @DeleteMapping("/{id}")
     public void deleteExpedienteSecundario(@PathVariable Long id){

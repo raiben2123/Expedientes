@@ -55,18 +55,18 @@ public class EmpresaService {
         empresaRepository.deleteById(id);
     }
 
-//    public Empresa update(Long id, Empresa empresaDetails){
-//        Empresa empresa = empresaRepository.findById(id).orElse(null);
-//        if (empresa != null){
-//            empresa.setCif(empresaDetails.getCif());
-//            empresa.setName(empresaDetails.getName());
-//            empresa.setAddress(empresaDetails.getAddress());
-//            empresa.setTlf(empresaDetails.getTlf());
-//            empresa.setEmail(empresaDetails.getEmail());
-//            empresa.setRepresentante(empresaDetails.getRepresentante());
-//
-//            return empresaRepository.save(empresa);
-//        }
-//        return null;
-//    }
+    public Empresa update(Long id, Empresa empresaDetails){
+        Empresa empresa = empresaRepository.findById(id).orElse(null);
+        if (empresa != null){
+            empresa.setCif(empresaDetails.getCif());
+            empresa.setName(empresaDetails.getName());
+            empresa.setAddress(empresaDetails.getAddress());
+            empresa.setTlf(empresaDetails.getTlf());
+            empresa.setEmail(empresaDetails.getEmail());
+            empresa.setRepresentante(empresaDetails.getRepresentante());
+
+            return empresaRepository.save(empresa);
+        }
+        return null;
+    }
 }

@@ -64,10 +64,10 @@ public class PeticionarioController {
         return peticionarioService.save(peticionario);
     }
 
-//    @PutMapping("/{id}")
-//    public Peticionario updatePeticionario(@PathVariable Long id, @RequestBody Peticionario peticionario){
-//        return peticionarioService.update(id, peticionario);
-//    }
+    @PutMapping("/{id}")
+    public Peticionario updatePeticionario(@PathVariable Long id, @RequestBody Peticionario peticionario){
+        return peticionarioService.update(id, peticionario);
+    }
 
     @DeleteMapping("/{id}")
     public void deletePeticionario(@PathVariable Long id){

@@ -26,27 +26,27 @@ public class EmpresaController {
         return empresaService.findById(id);
     }
 
-    @GetMapping("/{cif}")
+    @GetMapping("/cif/{cif}")
     public List<Empresa> getEmpresaCif(@PathVariable String cif) {
         return empresaService.findByCif(cif);
     }
 
-    @GetMapping("/{name}")
+    @GetMapping("/name/{name}")
     public List<Empresa> getEmpresaNombre(@PathVariable String name) {
         return empresaService.findByName(name);
     }
 
-    @GetMapping("/{address}")
+    @GetMapping("/address/{address}")
     public List<Empresa> getEmpresaAddress(@PathVariable String address){
         return empresaService.findByAddress(address);
     }
 
-    @GetMapping("/{tlf}")
+    @GetMapping("/tlf/{tlf}")
     public List<Empresa> getEmpresaTlf(@PathVariable String tlf){
         return empresaService.findByTlf(tlf);
     }
 
-    @GetMapping("/{email}")
+    @GetMapping("/email/{email}")
     public List<Empresa> getEmpresaEmail(@PathVariable String email){
         return empresaService.findByEmail(email);
     }
@@ -61,10 +61,10 @@ public class EmpresaController {
         return empresaService.saveEmpresa(empresa);
     }
 
-//    @PutMapping("/{id}")
-//    public Empresa updateEmpresa(@PathVariable Long id, @RequestBody Empresa empresa){
-//        return empresaService.update(id, empresa);
-//    }
+    @PutMapping("/{id}")
+    public Empresa updateEmpresa(@PathVariable Long id, @RequestBody Empresa empresa){
+        return empresaService.update(id, empresa);
+    }
 
     @DeleteMapping("/{id}")
     public void deleteEmpresa(@PathVariable Long id){

@@ -88,24 +88,24 @@ public class ExpedientePrincipalService {
         expedientePrincipalRepository.deleteById(id);
     }
 
-//    public ExpedientePrincipal update(Long id, ExpedientePrincipal expedientePrincipalDetails){
-//        ExpedientePrincipal expedientePrincipal = expedientePrincipalRepository.findById(id).orElse(null);
-//        if (expedientePrincipal != null){
-//            expedientePrincipal.setExpediente(expedientePrincipalDetails.getExpediente());
-//            expedientePrincipal.setSolicitud(expedientePrincipalDetails.getSolicitud());
-//            expedientePrincipal.setRegistro(expedientePrincipalDetails.getRegistro());
-//            expedientePrincipal.setFechaRegistro(expedientePrincipalDetails.getFechaRegistro());
-//            expedientePrincipal.setObjeto(expedientePrincipalDetails.getObjeto());
-//            expedientePrincipal.setReferenciaCatastral(expedientePrincipalDetails.getReferenciaCatastral());
-//            expedientePrincipal.setEstadoExpediente(expedientePrincipalDetails.getEstadoExpediente());
-//            expedientePrincipal.setDepartamento(expedientePrincipalDetails.getDepartamento());
-//            expedientePrincipal.setClasificacion(expedientePrincipalDetails.getClasificacion());
-//            expedientePrincipal.setEmpresa(expedientePrincipalDetails.getEmpresa());
-//            expedientePrincipal.setPeticionario(expedientePrincipalDetails.getPeticionario());
-//            expedientePrincipal.setFechaInicio(expedientePrincipalDetails.getFechaInicio());
-//
-//            return expedientePrincipalRepository.save(expedientePrincipal);
-//        }
-//        return null;
-//    }
+    public ExpedientePrincipal update(Long id, ExpedientePrincipal expedientePrincipalDetails){
+        ExpedientePrincipal expedientePrincipal = expedientePrincipalRepository.findById(id).orElse(null);
+        if (expedientePrincipal != null){
+            expedientePrincipal.setExpediente(expedientePrincipalDetails.getExpediente());
+            expedientePrincipal.setSolicitud(expedientePrincipalDetails.getSolicitud());
+            expedientePrincipal.setRegistro(expedientePrincipalDetails.getRegistro());
+            expedientePrincipal.setFechaRegistro(expedientePrincipalDetails.getFechaRegistro());
+            expedientePrincipal.setObjeto(expedientePrincipalDetails.getObjeto());
+            expedientePrincipal.setReferenciaCatastral(expedientePrincipalDetails.getReferenciaCatastral());
+            expedientePrincipal.setEstadoExpediente(expedientePrincipalDetails.getEstadoExpediente());
+            expedientePrincipal.setDepartamento(expedientePrincipalDetails.getDepartamento());
+            expedientePrincipal.setClasificacion(expedientePrincipalDetails.getClasificacion());
+            expedientePrincipal.setEmpresa(expedientePrincipalDetails.getEmpresa());
+            expedientePrincipal.setPeticionario(expedientePrincipalDetails.getPeticionario());
+            expedientePrincipal.setFechaInicio(expedientePrincipalDetails.getFechaInicio());
+
+            return expedientePrincipalRepository.save(expedientePrincipal);
+        }
+        return null;
+    }
 }

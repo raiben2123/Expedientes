@@ -1,13 +1,16 @@
 package com.ruben.Expedientes.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.Date;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public abstract class Expediente {
     @Id
     @GeneratedValue(strategy = GenerationType.TABLE)

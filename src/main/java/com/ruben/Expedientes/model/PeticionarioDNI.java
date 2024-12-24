@@ -1,11 +1,14 @@
 package com.ruben.Expedientes.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
 @DiscriminatorValue("DNI")
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class PeticionarioDNI extends Peticionario{
     private String dni;
 }

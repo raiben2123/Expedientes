@@ -44,11 +44,9 @@ public class ClasificacionController {
         clasificacionService.deleteClasificacion(id);
     }
 
-//    @PutMapping("/{id}")
-//    public Clasificacion updateClasificacion(@PathVariable Long id, @RequestBody Clasificacion clasificacion){
-//        return clasificacionService.update(id, clasificacion);
-//    }
+    @PutMapping("/{id}")
+    public Clasificacion updateClasificacion(@PathVariable Long id, @RequestBody Clasificacion clasificacion){
+        return clasificacionService.update(id, clasificacion);
+    }
 
 }
-
-

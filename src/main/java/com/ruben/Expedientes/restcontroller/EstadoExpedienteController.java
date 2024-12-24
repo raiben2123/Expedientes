@@ -35,10 +35,10 @@ public class EstadoExpedienteController {
         return estadoExpedienteService.saveExpediente(estadoExpediente);
     }
 
-//    @PutMapping("/{id}")
-//    public EstadoExpediente updateEstadoExpediente(@PathVariable Long id, @RequestBody EstadoExpediente estadoExpediente){
-//        return estadoExpedienteService.update(id, estadoExpediente);
-//    }
+    @PutMapping("/{id}")
+    public EstadoExpediente updateEstadoExpediente(@PathVariable Long id, @RequestBody EstadoExpediente estadoExpediente){
+        return estadoExpedienteService.update(id, estadoExpediente);
+    }
 
     @DeleteMapping("/{id}")
     public void deleteEstadoExpediente(@PathVariable Long id){

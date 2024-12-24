@@ -33,13 +33,13 @@ public class EstadoExpedienteService {
         estadoExpedienteRepository.deleteById(id);
     }
 
-//    public EstadoExpediente update(Long id, EstadoExpediente estadoExpedienteDetails){
-//        EstadoExpediente estadoExpediente = estadoExpedienteRepository.findById(id).orElse(null);
-//        if (estadoExpediente != null){
-//            estadoExpediente.setName(estadoExpedienteDetails.getName());
-//
-//            return estadoExpedienteRepository.save(estadoExpediente);
-//        }
-//        return null;
-//    }
+    public EstadoExpediente update(Long id, EstadoExpediente estadoExpedienteDetails){
+        EstadoExpediente estadoExpediente = estadoExpedienteRepository.findById(id).orElse(null);
+        if (estadoExpediente != null){
+            estadoExpediente.setName(estadoExpedienteDetails.getName());
+
+            return estadoExpedienteRepository.save(estadoExpediente);
+        }
+        return null;
+    }
 }

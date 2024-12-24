@@ -33,13 +33,13 @@ public class DepartamentoService {
         departamentoRepository.deleteById(id);
     }
 
-//    public Departamento update(Long id, Departamento departamentoDetails){
-//        Departamento departamento = departamentoRepository.findById(id).orElse(null);
-//        if (departamento != null){
-//            departamento.setName(departamentoDetails.getName());
-//
-//            return departamentoRepository.save(departamento);
-//        }
-//        return null;
-//    }
+    public Departamento update(Long id, Departamento departamentoDetails){
+        Departamento departamento = departamentoRepository.findById(id).orElse(null);
+        if (departamento != null){
+            departamento.setName(departamentoDetails.getName());
+
+            return departamentoRepository.save(departamento);
+        }
+        return null;
+    }
 }

@@ -1,12 +1,15 @@
 package com.ruben.Expedientes.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class ExpedientePrincipal extends Expediente{
     @OneToMany(mappedBy = "expedientePrincipal")
     private List<ExpedienteSecundario> expedienteSecundario;

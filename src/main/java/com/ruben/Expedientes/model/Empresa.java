@@ -1,12 +1,19 @@
 package com.ruben.Expedientes.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Empresa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,6 +23,8 @@ public class Empresa {
     private String address;
     private String tlf;
     private String email;
+
+    @OneToOne(mappedBy = "representa", cascade = CascadeType.ALL)
     private Peticionario representante;
 
     @OneToMany(mappedBy = "empresa")

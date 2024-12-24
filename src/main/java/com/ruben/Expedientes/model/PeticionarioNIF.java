@@ -1,11 +1,14 @@
 package com.ruben.Expedientes.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
 @DiscriminatorValue("NIF")
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class PeticionarioNIF extends Peticionario{
     private String nif;
 }

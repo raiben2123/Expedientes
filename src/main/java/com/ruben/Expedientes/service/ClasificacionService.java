@@ -36,15 +36,15 @@ public class ClasificacionService {
         clasificacionRepository.deleteById(id);
     }
 
-//    public Clasificacion update(Long id, Clasificacion clasificacionDetails){
-//        Clasificacion clasificacion = clasificacionRepository.findById(id).orElse(null);
-//        if (clasificacion != null){
-//            clasificacion.setName(clasificacionDetails.getName());
-//            clasificacion.setAcronym(clasificacionDetails.getAcronym());
-//
-//            return clasificacionRepository.save(clasificacion);
-//        }
-//        return null;
-//    }
+    public Clasificacion update(Long id, Clasificacion clasificacionDetails){
+        Clasificacion clasificacion = clasificacionRepository.findById(id).orElse(null);
+        if (clasificacion != null){
+            clasificacion.setName(clasificacionDetails.getName());
+            clasificacion.setAcronym(clasificacionDetails.getAcronym());
+
+            return clasificacionRepository.save(clasificacion);
+        }
+        return null;
+    }
 
 }

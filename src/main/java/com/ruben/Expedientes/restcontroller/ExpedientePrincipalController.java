@@ -96,10 +96,10 @@ public class ExpedientePrincipalController {
         return expedientePrincipalService.savePrincipal(expedientePrincipal);
     }
 
-//    @PutMapping("/{id}")
-//    public ExpedientePrincipal updateExpedientePrincipal(@PathVariable Long id, @RequestBody ExpedientePrincipal expedientePrincipal){
-//        return expedientePrincipalService.update(id, expedientePrincipal);
-//    }
+    @PutMapping("/{id}")
+    public ExpedientePrincipal updateExpedientePrincipal(@PathVariable Long id, @RequestBody ExpedientePrincipal expedientePrincipal){
+        return expedientePrincipalService.update(id, expedientePrincipal);
+    }
 
     @DeleteMapping("/{id}")
     public void deleteExpedientePrincipal(@PathVariable Long id){

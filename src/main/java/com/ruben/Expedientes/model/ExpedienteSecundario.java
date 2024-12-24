@@ -1,10 +1,13 @@
 package com.ruben.Expedientes.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class ExpedienteSecundario extends Expediente{
     @ManyToOne
     @JoinColumn(name = "expediente_principal_id")

@@ -88,24 +88,24 @@ public class ExpedienteSecundarioService {
         expedienteSecundarioRepository.deleteById(id);
     }
 
-//    public ExpedienteSecundario update(Long id, ExpedienteSecundario expedienteSecundarioDetails){
-//        ExpedienteSecundario expedienteSecundario = expedienteSecundarioRepository.findById(id).orElse(null);
-//        if (expedienteSecundario != null){
-//            expedienteSecundario.setExpediente(expedienteSecundarioDetails.getExpediente());
-//            expedienteSecundario.setSolicitud(expedienteSecundarioDetails.getSolicitud());
-//            expedienteSecundario.setRegistro(expedienteSecundarioDetails.getRegistro());
-//            expedienteSecundario.setFechaRegistro(expedienteSecundarioDetails.getFechaRegistro());
-//            expedienteSecundario.setObjeto(expedienteSecundarioDetails.getObjeto());
-//            expedienteSecundario.setReferenciaCatastral(expedienteSecundario.getReferenciaCatastral());
-//            expedienteSecundario.setEstadoExpediente(expedienteSecundarioDetails.getEstadoExpediente());
-//            expedienteSecundario.setDepartamento(expedienteSecundarioDetails.getDepartamento());
-//            expedienteSecundario.setClasificacion(expedienteSecundarioDetails.getClasificacion());
-//            expedienteSecundario.setEmpresa(expedienteSecundarioDetails.getEmpresa());
-//            expedienteSecundario.setPeticionario(expedienteSecundarioDetails.getPeticionario());
-//            expedienteSecundario.setFechaInicio(expedienteSecundarioDetails.getFechaInicio());
-//            return expedienteSecundarioRepository.save(expedienteSecundario);
-//        }
-//        return null;
-//    }
+    public ExpedienteSecundario update(Long id, ExpedienteSecundario expedienteSecundarioDetails){
+        ExpedienteSecundario expedienteSecundario = expedienteSecundarioRepository.findById(id).orElse(null);
+        if (expedienteSecundario != null){
+            expedienteSecundario.setExpediente(expedienteSecundarioDetails.getExpediente());
+            expedienteSecundario.setSolicitud(expedienteSecundarioDetails.getSolicitud());
+            expedienteSecundario.setRegistro(expedienteSecundarioDetails.getRegistro());
+            expedienteSecundario.setFechaRegistro(expedienteSecundarioDetails.getFechaRegistro());
+            expedienteSecundario.setObjeto(expedienteSecundarioDetails.getObjeto());
+            expedienteSecundario.setReferenciaCatastral(expedienteSecundario.getReferenciaCatastral());
+            expedienteSecundario.setEstadoExpediente(expedienteSecundarioDetails.getEstadoExpediente());
+            expedienteSecundario.setDepartamento(expedienteSecundarioDetails.getDepartamento());
+            expedienteSecundario.setClasificacion(expedienteSecundarioDetails.getClasificacion());
+            expedienteSecundario.setEmpresa(expedienteSecundarioDetails.getEmpresa());
+            expedienteSecundario.setPeticionario(expedienteSecundarioDetails.getPeticionario());
+            expedienteSecundario.setFechaInicio(expedienteSecundarioDetails.getFechaInicio());
+            return expedienteSecundarioRepository.save(expedienteSecundario);
+        }
+        return null;
+    }
 
 }

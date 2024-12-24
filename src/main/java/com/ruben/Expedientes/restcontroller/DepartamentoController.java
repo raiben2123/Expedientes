@@ -34,10 +34,10 @@ public class DepartamentoController {
         return departamentoService.saveDepartamento(departamento);
     }
 
-//    @PutMapping("/{id}")
-//    public Departamento updateDepartamento(@PathVariable Long id, Departamento departamento){
-//        return departamentoService.update(id, departamento);
-//    }
+    @PutMapping("/{id}")
+    public Departamento updateDepartamento(@PathVariable Long id, @RequestBody Departamento departamento){
+        return departamentoService.update(id, departamento);
+    }
 
     @DeleteMapping("/{id}")
     public void deleteDepartamento(@PathVariable Long id){
