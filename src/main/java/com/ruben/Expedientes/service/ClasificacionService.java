@@ -1,50 +1,80 @@
 package com.ruben.Expedientes.service;
 
+import com.ruben.Expedientes.dto.ClasificacionDTO;
 import com.ruben.Expedientes.model.Clasificacion;
 import com.ruben.Expedientes.repository.ClasificacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ClasificacionService {
     @Autowired
     private ClasificacionRepository clasificacionRepository;
 
-    public Clasificacion findById(Long id) {
-        return clasificacionRepository.findById(id).orElse(null);
+    public ClasificacionDTO findById(Long id) {
+        return clasificacionRepository.findById(id)
+                .map(this::convertToDTO)
+                .orElse(null);
     }
 
-    public List<Clasificacion> findByName(String name) {
-        return clasificacionRepository.findByName(name);
+    public List<ClasificacionDTO> findByName(String name) {
+        return clasificacionRepository.findByName(name)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<Clasificacion> findByAcronym(String acronym) {
-        return clasificacionRepository.findByAcronym(acronym);
+    public List<ClasificacionDTO> findByAcronym(String acronym) {
+        return clasificacionRepository.findByAcronym(acronym)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public Clasificacion saveClasificacion(Clasificacion clasificacion) {
-        return clasificacionRepository.save(clasificacion);
+    public ClasificacionDTO saveClasificacion(ClasificacionDTO clasificacionDTO) {
+        Clasificacion clasificacion = convertToEntity(clasificacionDTO);
+        Clasificacion savedClasificacion = clasificacionRepository.save(clasificacion);
+        return convertToDTO(savedClasificacion);
     }
 
-    public List<Clasificacion> findAll() {
-        return clasificacionRepository.findAll();
+    public List<ClasificacionDTO> findAll() {
+        List<Clasificacion> clasificaciones = clasificacionRepository.findAll();
+
+        return clasificaciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public void deleteClasificacion(Long id){
+    public void deleteClasificacion(Long id) {
         clasificacionRepository.deleteById(id);
     }
 
-    public Clasificacion update(Long id, Clasificacion clasificacionDetails){
-        Clasificacion clasificacion = clasificacionRepository.findById(id).orElse(null);
-        if (clasificacion != null){
-            clasificacion.setName(clasificacionDetails.getName());
-            clasificacion.setAcronym(clasificacionDetails.getAcronym());
-
-            return clasificacionRepository.save(clasificacion);
-        }
-        return null;
+    public ClasificacionDTO update(Long id, ClasificacionDTO clasificacionDetails) {
+        return clasificacionRepository.findById(id)
+                .map(clasificacion -> {
+                    clasificacion.setName(clasificacionDetails.getName());
+                    clasificacion.setAcronym(clasificacionDetails.getAcronym());
+                    return convertToDTO(clasificacionRepository.save(clasificacion));
+                })
+                .orElse(null);
     }
 
+    private ClasificacionDTO convertToDTO(Clasificacion clasificacion) {
+                ClasificacionDTO clasificacionDTO = new ClasificacionDTO();
+                clasificacionDTO.setId(clasificacion.getId());
+                clasificacionDTO.setName(clasificacion.getName());
+                clasificacionDTO.setAcronym(clasificacion.getAcronym());
+                return clasificacionDTO;
+    }
+
+    private Clasificacion convertToEntity(ClasificacionDTO clasificacionDTO) {
+        Clasificacion clasificacion = new Clasificacion();
+        clasificacion.setId(clasificacionDTO.getId());
+        clasificacion.setName(clasificacionDTO.getName());
+        clasificacion.setAcronym(clasificacionDTO.getAcronym());
+        return clasificacion;
+    }
 }

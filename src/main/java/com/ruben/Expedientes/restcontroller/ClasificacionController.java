@@ -1,6 +1,7 @@
 package com.ruben.Expedientes.restcontroller;
 
-import com.ruben.Expedientes.model.Clasificacion;
+import com.ruben.Expedientes.dto.ClasificacionDTO;
+import java.util.NoSuchElementException;
 import com.ruben.Expedientes.service.ClasificacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,28 +16,32 @@ public class ClasificacionController {
     private ClasificacionService clasificacionService;
 
     @GetMapping
-    public List<Clasificacion> getAllClasificaciones() {
+    public List<ClasificacionDTO> getAllClasificaciones() {
         return clasificacionService.findAll();
     }
 
     @GetMapping("/{id}")
-    public Clasificacion getClasificacionId(@PathVariable Long id) {
-        return clasificacionService.findById(id);
+    public ClasificacionDTO getClasificacionId(@PathVariable Long id) {
+        ClasificacionDTO clasificacion = clasificacionService.findById(id);
+        if (clasificacion == null) {
+            throw new NoSuchElementException("Clasificación no encontrada con id: " + id);
+        }
+        return clasificacion;
     }
 
     @GetMapping("/nombre/{name}")
-    public List<Clasificacion> getClasificacionNombre(@PathVariable String name) {
+    public List<ClasificacionDTO> getClasificacionNombre(@PathVariable String name) {
         return clasificacionService.findByName(name);
     }
 
     @GetMapping("/siglas/{acronym}")
-    public List<Clasificacion> getClasificacionAcronym(@PathVariable String acronym) {
+    public List<ClasificacionDTO> getClasificacionAcronym(@PathVariable String acronym) {
         return clasificacionService.findByAcronym(acronym);
     }
 
     @PostMapping
-    public Clasificacion createClasificacion(@RequestBody Clasificacion clasificacion) {
-        return clasificacionService.saveClasificacion(clasificacion);
+    public ClasificacionDTO createClasificacion(@RequestBody ClasificacionDTO clasificacionDTO) {
+        return clasificacionService.saveClasificacion(clasificacionDTO);
     }
 
     @DeleteMapping("/{id}")
@@ -45,8 +50,7 @@ public class ClasificacionController {
     }
 
     @PutMapping("/{id}")
-    public Clasificacion updateClasificacion(@PathVariable Long id, @RequestBody Clasificacion clasificacion){
-        return clasificacionService.update(id, clasificacion);
+    public ClasificacionDTO updateClasificacion(@PathVariable Long id, @RequestBody ClasificacionDTO clasificacionDTO) {
+        return clasificacionService.update(id, clasificacionDTO);
     }
-
 }

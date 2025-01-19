@@ -1,6 +1,5 @@
 package com.ruben.Expedientes.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
@@ -32,4 +31,10 @@ public class Empresa {
 
     @OneToMany(mappedBy = "empresa")
     private List<ExpedienteSecundario> expedienteSecundarioList;
+
+    public Empresa(Long id, String cif, String name, String address, String tlf, String email) {
+    }
+
+    public Empresa(Long empresaId) {
+    }
 }

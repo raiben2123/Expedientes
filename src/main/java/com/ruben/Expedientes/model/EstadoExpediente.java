@@ -21,4 +21,10 @@ public class EstadoExpediente {
 
     @OneToMany(mappedBy = "estadoExpediente")
     private List<ExpedienteSecundario> expedienteSecundarioList;
+
+    public EstadoExpediente(Long id, String name) {
+    }
+
+    public EstadoExpediente(Long estadoExpedienteId) {
+    }
 }

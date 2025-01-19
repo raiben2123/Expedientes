@@ -33,4 +33,16 @@ public class Clasificacion {
 
     @OneToMany(mappedBy = "clasificacion")
     private List<ExpedienteSecundario> expedienteSecundarioList;
+
+    public Clasificacion(Long clasificacionId) {
+    }
+
+    @Override
+    public String toString() {
+        return "Clasificacion{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", acronym='" + acronym + '\'' +
+                '}';
+    }
 }

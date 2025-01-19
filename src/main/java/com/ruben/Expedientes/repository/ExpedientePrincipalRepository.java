@@ -1,7 +1,6 @@
 package com.ruben.Expedientes.repository;
 
 import com.ruben.Expedientes.model.*;
-import com.ruben.Expedientes.service.EstadoExpedienteService;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Date;

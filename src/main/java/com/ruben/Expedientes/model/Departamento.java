@@ -21,4 +21,7 @@ public class Departamento {
 
     @OneToMany(mappedBy = "departamento")
     private List<ExpedienteSecundario> expedienteSecundarioList;
+
+    public Departamento(Long departamentoId) {
+    }
 }

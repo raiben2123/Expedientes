@@ -1,77 +1,59 @@
 package com.ruben.Expedientes.restcontroller;
 
-import com.ruben.Expedientes.model.Peticionario;
+import com.ruben.Expedientes.dto.PeticionarioDNIDTO;
+import com.ruben.Expedientes.dto.PeticionarioDTO;
+import com.ruben.Expedientes.dto.PeticionarioNIFDTO;
 import com.ruben.Expedientes.service.PeticionarioService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/peticionarios")
+@RequiredArgsConstructor
 public class PeticionarioController {
 
-    @Autowired
-    private PeticionarioService peticionarioService;
+    private final PeticionarioService peticionarioService;
 
     @GetMapping
-    public List<Peticionario> getAllPeticionarios(){
+    public List<PeticionarioDTO> getAllPeticionarios() {
         return peticionarioService.findAll();
     }
 
     @GetMapping("/{id}")
-    public Peticionario getPeticionarioId(@PathVariable Long id){
-        return peticionarioService.findById(id);
+    public ResponseEntity<PeticionarioDTO> getPeticionarioId(@PathVariable Long id) {
+        return ResponseEntity.ok(peticionarioService.findById(id));
     }
 
-    @GetMapping("/{name}")
-    public List<Peticionario> getPeticionarioName(@PathVariable String name){
-        return peticionarioService.findByName(name);
-    }
-
-    @GetMapping("/{surname}")
-    public List<Peticionario> getPeticionarioSurname(@PathVariable String surname){
-        return peticionarioService.findBySurname(surname);
-    }
-
-    @GetMapping("/{address}")
-    public List<Peticionario> getPeticionarioAddress(@PathVariable String address){
-        return peticionarioService.findByAddress(address);
-    }
-
-    @GetMapping("/{tlf}")
-    public List<Peticionario> getPeticionarioTlf(@PathVariable String tlf){
-        return peticionarioService.findByTlf(tlf);
-    }
-
-    @GetMapping("/{email}")
-    public List<Peticionario> getPeticionarioEmail(@PathVariable String email){
-        return peticionarioService.findByEmail(email);
-    }
-
-    @GetMapping("/{dni}")
-    public List<Peticionario> getPeticionarioDni(@PathVariable String dni){
-        return peticionarioService.findByDni(dni);
-    }
-
-    @GetMapping("/{nif}")
-    public List<Peticionario> getPeticionarioNif(@PathVariable String nif){
-        return peticionarioService.findByNif(nif);
-    }
+    // ... otros métodos de búsqueda ...
 
     @PostMapping
-    public Peticionario createPeticionario(@RequestBody Peticionario peticionario){
-        return peticionarioService.save(peticionario);
+    public ResponseEntity<PeticionarioDTO> createPeticionario(@RequestBody PeticionarioDTO peticionarioDTO) {
+        return ResponseEntity.ok(peticionarioService.save(peticionarioDTO));
     }
 
     @PutMapping("/{id}")
-    public Peticionario updatePeticionario(@PathVariable Long id, @RequestBody Peticionario peticionario){
-        return peticionarioService.update(id, peticionario);
+    public ResponseEntity<PeticionarioDTO> updatePeticionario(@PathVariable Long id, @RequestBody PeticionarioDTO peticionarioDetails) {
+        return ResponseEntity.ok(peticionarioService.update(id, peticionarioDetails));
     }
 
     @DeleteMapping("/{id}")
-    public void deletePeticionario(@PathVariable Long id){
+    public ResponseEntity<Void> deletePeticionario(@PathVariable Long id) {
         peticionarioService.deletePeticionario(id);
+        return ResponseEntity.noContent().build();
     }
 
+    // Cambiado a un mapeo único para obtener el tipo de peticionario
+    @GetMapping("/tipo/{id}")
+    public ResponseEntity<String> getTipoPeticionario(@PathVariable Long id) {
+        PeticionarioDTO peticionarioDTO = peticionarioService.findById(id);
+        if (peticionarioDTO instanceof PeticionarioDNIDTO) {
+            return ResponseEntity.ok("DNI");
+        } else if (peticionarioDTO instanceof PeticionarioNIFDTO) {
+            return ResponseEntity.ok("NIF");
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

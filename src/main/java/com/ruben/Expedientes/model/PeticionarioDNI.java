@@ -11,4 +11,12 @@ import lombok.*;
 @Setter
 public class PeticionarioDNI extends Peticionario{
     private String dni;
+
+    public PeticionarioDNI(Long peticionarioId) {
+    }
+
+    @Override
+    public String getTipoPeticionario() {
+        return "NIF";
+    }
 }

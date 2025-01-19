@@ -3,6 +3,7 @@ package com.ruben.Expedientes.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Entity
@@ -10,7 +11,10 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ExpedientePrincipal extends Expediente{
+public class ExpedientePrincipal extends Expediente implements Serializable {
     @OneToMany(mappedBy = "expedientePrincipal")
     private List<ExpedienteSecundario> expedienteSecundario;
+
+    public ExpedientePrincipal(Long expedientePrincipalId) {
+    }
 }

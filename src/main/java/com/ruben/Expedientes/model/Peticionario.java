@@ -42,4 +42,6 @@ public abstract class Peticionario implements Serializable {
     @OneToOne
     @JoinColumn(name = "empresa_id")
     private Empresa representa;
+
+    public abstract String getTipoPeticionario();
 }

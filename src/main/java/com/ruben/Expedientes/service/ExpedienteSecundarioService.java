@@ -1,111 +1,153 @@
 package com.ruben.Expedientes.service;
 
+import com.ruben.Expedientes.dto.ExpedienteSecundarioDTO;
 import com.ruben.Expedientes.model.*;
-import com.ruben.Expedientes.repository.ExpedienteSecundarioRepository;
+import com.ruben.Expedientes.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ExpedienteSecundarioService {
-
     @Autowired
     private ExpedienteSecundarioRepository expedienteSecundarioRepository;
 
-    public ExpedienteSecundario findByIdSecundario(Long id){
-        return expedienteSecundarioRepository.findById(id).orElse(null);
+    @Autowired
+    private EstadoExpedienteRepository estadoExpedienteRepository;
+
+    @Autowired
+    private DepartamentoRepository departamentoRepository;
+
+    @Autowired
+    private ClasificacionRepository clasificacionRepository;
+
+    @Autowired
+    private EmpresaRepository empresaRepository;
+
+    @Autowired
+    private PeticionarioRepository peticionarioRepository;
+
+    @Autowired
+    private ExpedientePrincipalRepository expedientePrincipalRepository;
+
+    public ExpedienteSecundarioDTO findByIdSecundario(Long id) {
+        return expedienteSecundarioRepository.findById(id)
+                .map(this::convertToDTO)
+                .orElse(null);
     }
 
-    public List<ExpedienteSecundario> findByExpediente(String expediente){
-        return expedienteSecundarioRepository.findByExpediente(expediente);
+    public List<ExpedienteSecundarioDTO> findByExpediente(String expediente) {
+        return expedienteSecundarioRepository.findByExpediente(expediente)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<ExpedienteSecundario> findBySolicitud(String solicitud){
-        return expedienteSecundarioRepository.findBySolicitud(solicitud);
+    public List<ExpedienteSecundarioDTO> findAll() {
+        return expedienteSecundarioRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<ExpedienteSecundario> findByRegistro(String registro){
-        return expedienteSecundarioRepository.findByRegistro(registro);
+    public ExpedienteSecundarioDTO saveSecundario(ExpedienteSecundarioDTO expedienteSecundarioDTO) {
+        ExpedienteSecundario expedienteSecundario = convertToEntity(expedienteSecundarioDTO);
+        return convertToDTO(expedienteSecundarioRepository.save(expedienteSecundario));
     }
 
-    public List<ExpedienteSecundario> findByFechaRegistro(Date fechaRegistro){
-        return expedienteSecundarioRepository.findByFechaRegistro(fechaRegistro);
-    }
-
-    public List<ExpedienteSecundario> findByObjeto(String objeto){
-        return expedienteSecundarioRepository.findByObjeto(objeto);
-    }
-
-    public List<ExpedienteSecundario> findByReferenciaCatastral(String referenciaCatastral){
-        return expedienteSecundarioRepository.findByReferenciaCatastral(referenciaCatastral);
-    }
-
-    public List<ExpedienteSecundario> findByEstadoExpediente(EstadoExpediente estadoExpediente){
-        return expedienteSecundarioRepository.findByEstadoExpediente(estadoExpediente);
-        //TODO
-    }
-
-    public List<ExpedienteSecundario> findByDepartamento(Departamento departamento){
-        return expedienteSecundarioRepository.findByDepartamento(departamento);
-        //TODO
-    }
-
-    public List<ExpedienteSecundario> findByClasificacion(Clasificacion clasificacion){
-        return expedienteSecundarioRepository.findByClasificacion(clasificacion);
-        //TODO
-    }
-
-    public List<ExpedienteSecundario> findByEmpresa(Empresa empresa){
-        return expedienteSecundarioRepository.findByEmpresa(empresa);
-        //TODO
-    }
-
-    public List<ExpedienteSecundario> findByPeticionario(Peticionario peticionario){
-        return expedienteSecundarioRepository.findByPeticionario(peticionario);
-        //TODO
-    }
-
-    public List<ExpedienteSecundario> findByFechaInicio(Date fechaInicio){
-        return expedienteSecundarioRepository.findByFechaInicio(fechaInicio);
-    }
-
-    public List<ExpedienteSecundario> findByPrincipal(ExpedientePrincipal expedientePrincipal){
-        return expedienteSecundarioRepository.findByExpedientePrincipal(expedientePrincipal);
-        //TODO
-    }
-
-    public List<ExpedienteSecundario> findAll(){
-        return expedienteSecundarioRepository.findAll();
-    }
-
-    public ExpedienteSecundario saveSecundario(ExpedienteSecundario expedienteSecundario){
-        return expedienteSecundarioRepository.save(expedienteSecundario);
-    }
-
-    public void deleteSecundario(Long id){
+    public void deleteSecundario(Long id) {
         expedienteSecundarioRepository.deleteById(id);
     }
 
-    public ExpedienteSecundario update(Long id, ExpedienteSecundario expedienteSecundarioDetails){
-        ExpedienteSecundario expedienteSecundario = expedienteSecundarioRepository.findById(id).orElse(null);
-        if (expedienteSecundario != null){
-            expedienteSecundario.setExpediente(expedienteSecundarioDetails.getExpediente());
-            expedienteSecundario.setSolicitud(expedienteSecundarioDetails.getSolicitud());
-            expedienteSecundario.setRegistro(expedienteSecundarioDetails.getRegistro());
-            expedienteSecundario.setFechaRegistro(expedienteSecundarioDetails.getFechaRegistro());
-            expedienteSecundario.setObjeto(expedienteSecundarioDetails.getObjeto());
-            expedienteSecundario.setReferenciaCatastral(expedienteSecundario.getReferenciaCatastral());
-            expedienteSecundario.setEstadoExpediente(expedienteSecundarioDetails.getEstadoExpediente());
-            expedienteSecundario.setDepartamento(expedienteSecundarioDetails.getDepartamento());
-            expedienteSecundario.setClasificacion(expedienteSecundarioDetails.getClasificacion());
-            expedienteSecundario.setEmpresa(expedienteSecundarioDetails.getEmpresa());
-            expedienteSecundario.setPeticionario(expedienteSecundarioDetails.getPeticionario());
-            expedienteSecundario.setFechaInicio(expedienteSecundarioDetails.getFechaInicio());
-            return expedienteSecundarioRepository.save(expedienteSecundario);
-        }
-        return null;
+    public ExpedienteSecundarioDTO update(Long id, ExpedienteSecundarioDTO expedienteSecundarioDetails) {
+        return expedienteSecundarioRepository.findById(id)
+                .map(existingExpediente -> {
+                    existingExpediente.setExpediente(expedienteSecundarioDetails.getExpediente());
+                    existingExpediente.setSolicitud(expedienteSecundarioDetails.getSolicitud());
+                    existingExpediente.setRegistro(expedienteSecundarioDetails.getRegistro());
+                    existingExpediente.setFechaRegistro(expedienteSecundarioDetails.getFechaRegistro());
+                    existingExpediente.setObjeto(expedienteSecundarioDetails.getObjeto());
+                    existingExpediente.setReferenciaCatastral(expedienteSecundarioDetails.getReferenciaCatastral());
+                    existingExpediente.setFechaInicio(expedienteSecundarioDetails.getFechaInicio());
+
+                    existingExpediente.setEstadoExpediente(estadoExpedienteRepository.findById(expedienteSecundarioDetails.getEstadoExpedienteId())
+                            .orElseThrow(() -> new RuntimeException("EstadoExpediente not found with id: " + expedienteSecundarioDetails.getEstadoExpedienteId())));
+                    existingExpediente.setDepartamento(departamentoRepository.findById(expedienteSecundarioDetails.getDepartamentoId())
+                            .orElseThrow(() -> new RuntimeException("Departamento not found with id: " + expedienteSecundarioDetails.getDepartamentoId())));
+                    existingExpediente.setClasificacion(clasificacionRepository.findById(expedienteSecundarioDetails.getClasificacionId())
+                            .orElseThrow(() -> new RuntimeException("Clasificacion not found with id: " + expedienteSecundarioDetails.getClasificacionId())));
+
+                    if (expedienteSecundarioDetails.getEmpresaId() != null) {
+                        existingExpediente.setEmpresa(empresaRepository.findById(expedienteSecundarioDetails.getEmpresaId())
+                                .orElseThrow(() -> new RuntimeException("Empresa not found with id: " + expedienteSecundarioDetails.getEmpresaId())));
+                    } else {
+                        existingExpediente.setEmpresa(null);
+                    }
+
+                    Peticionario peticionario = peticionarioRepository.findById(expedienteSecundarioDetails.getPeticionarioId())
+                            .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + expedienteSecundarioDetails.getPeticionarioId()));
+                    existingExpediente.setPeticionario(peticionario);
+
+                    existingExpediente.setExpedientePrincipal(expedientePrincipalRepository.findById(expedienteSecundarioDetails.getExpedientePrincipalId())
+                            .orElseThrow(() -> new RuntimeException("ExpedientePrincipal not found with id: " + expedienteSecundarioDetails.getExpedientePrincipalId())));
+
+                    return convertToDTO(expedienteSecundarioRepository.save(existingExpediente));
+                })
+                .orElse(null);
     }
 
+    private ExpedienteSecundarioDTO convertToDTO(ExpedienteSecundario expedienteSecundario) {
+        ExpedienteSecundarioDTO dto = new ExpedienteSecundarioDTO();
+        dto.setId(expedienteSecundario.getId());
+        dto.setExpediente(expedienteSecundario.getExpediente());
+        dto.setSolicitud(expedienteSecundario.getSolicitud());
+        dto.setRegistro(expedienteSecundario.getRegistro());
+        dto.setFechaRegistro(expedienteSecundario.getFechaRegistro());
+        dto.setObjeto(expedienteSecundario.getObjeto());
+        dto.setReferenciaCatastral(expedienteSecundario.getReferenciaCatastral());
+        dto.setEstadoExpedienteId(expedienteSecundario.getEstadoExpediente().getId());
+        dto.setDepartamentoId(expedienteSecundario.getDepartamento().getId());
+        dto.setClasificacionId(expedienteSecundario.getClasificacion().getId());
+        if (expedienteSecundario.getEmpresa() != null) {
+            dto.setEmpresaId(expedienteSecundario.getEmpresa().getId());
+        }
+        dto.setPeticionarioId(expedienteSecundario.getPeticionario().getId());
+        dto.setFechaInicio(expedienteSecundario.getFechaInicio());
+        dto.setExpedientePrincipalId(expedienteSecundario.getExpedientePrincipal().getId());
+        return dto;
+    }
+
+    private ExpedienteSecundario convertToEntity(ExpedienteSecundarioDTO dto) {
+        ExpedienteSecundario entity = new ExpedienteSecundario();
+
+        entity.setId(dto.getId());
+        entity.setExpediente(dto.getExpediente());
+        entity.setSolicitud(dto.getSolicitud());
+        entity.setRegistro(dto.getRegistro());
+        entity.setFechaRegistro(dto.getFechaRegistro());
+        entity.setObjeto(dto.getObjeto());
+        entity.setReferenciaCatastral(dto.getReferenciaCatastral());
+        entity.setFechaInicio(dto.getFechaInicio());
+
+        entity.setEstadoExpediente(estadoExpedienteRepository.findById(dto.getEstadoExpedienteId()).orElseThrow());
+        entity.setDepartamento(departamentoRepository.findById(dto.getDepartamentoId()).orElseThrow());
+        entity.setClasificacion(clasificacionRepository.findById(dto.getClasificacionId()).orElseThrow());
+
+        if (dto.getEmpresaId() != null) {
+            entity.setEmpresa(empresaRepository.findById(dto.getEmpresaId()).orElseThrow());
+        }
+
+        Peticionario peticionario = peticionarioRepository.findById(dto.getPeticionarioId())
+                .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + dto.getPeticionarioId()));
+        entity.setPeticionario(peticionario);
+
+        entity.setExpedientePrincipal(expedientePrincipalRepository.findById(dto.getExpedientePrincipalId())
+                .orElseThrow(() -> new RuntimeException("ExpedientePrincipal not found with id: " + dto.getExpedientePrincipalId())));
+
+        return entity;
+    }
 }
