@@ -72,10 +72,7 @@ public class ExpedientePrincipalService {
     public ExpedientePrincipalDTO update(Long id, ExpedientePrincipalDTO expedientePrincipalDetails) {
         return expedientePrincipalRepository.findById(id)
                 .map(existingExpediente -> {
-                    // Aquí 'id' ya está en el scope del lambda, por lo que debemos cambiar el nombre de la variable
-                    Long existingId = existingExpediente.getId();
-
-                    // Actualizar los campos del objeto existente
+                    // Update fields of the existing expediente
                     existingExpediente.setExpediente(expedientePrincipalDetails.getExpediente());
                     existingExpediente.setSolicitud(expedientePrincipalDetails.getSolicitud());
                     existingExpediente.setRegistro(expedientePrincipalDetails.getRegistro());
@@ -84,7 +81,7 @@ public class ExpedientePrincipalService {
                     existingExpediente.setReferenciaCatastral(expedientePrincipalDetails.getReferenciaCatastral());
                     existingExpediente.setFechaInicio(expedientePrincipalDetails.getFechaInicio());
 
-                    // Actualizar relaciones
+                    // Update relationships
                     existingExpediente.setEstadoExpediente(estadoExpedienteRepository.findById(expedientePrincipalDetails.getEstadoExpedienteId())
                             .orElseThrow(() -> new RuntimeException("EstadoExpediente not found with id: " + expedientePrincipalDetails.getEstadoExpedienteId())));
                     existingExpediente.setDepartamento(departamentoRepository.findById(expedientePrincipalDetails.getDepartamentoId())
@@ -99,12 +96,16 @@ public class ExpedientePrincipalService {
                         existingExpediente.setEmpresa(null);
                     }
 
-                    // Manejo de Peticionario
-                    Peticionario peticionario = peticionarioRepository.findById(expedientePrincipalDetails.getPeticionarioId())
-                            .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + expedientePrincipalDetails.getPeticionarioId()));
-                    existingExpediente.setPeticionario(peticionario); // Asignar el peticionario existente
+                    // Handle Peticionario, allowing null values
+                    if (expedientePrincipalDetails.getPeticionarioId() != null) {
+                        Peticionario peticionario = peticionarioRepository.findById(expedientePrincipalDetails.getPeticionarioId())
+                                .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + expedientePrincipalDetails.getPeticionarioId()));
+                        existingExpediente.setPeticionario(peticionario);
+                    } else {
+                        existingExpediente.setPeticionario(null);
+                    }
 
-                    // Manejar la lista de IDs de ExpedienteSecundario
+                    // Handle the list of ExpedienteSecundario IDs
                     if (expedientePrincipalDetails.getExpedienteSecundarioIds() != null) {
                         List<ExpedienteSecundario> expedienteSecundarios = expedientePrincipalDetails.getExpedienteSecundarioIds().stream()
                                 .map(secundarioId -> {
@@ -113,7 +114,7 @@ public class ExpedientePrincipalService {
                                     return es;
                                 })
                                 .collect(Collectors.toList());
-                        existingExpediente.setExpedienteSecundario(expedienteSecundarios);
+                        existingExpediente.setExpedienteSecundarios(expedienteSecundarios);
                     }
 
                     return convertToDTO(expedientePrincipalRepository.save(existingExpediente));
@@ -130,16 +131,20 @@ public class ExpedientePrincipalService {
         dto.setFechaRegistro(expedientePrincipal.getFechaRegistro());
         dto.setObjeto(expedientePrincipal.getObjeto());
         dto.setReferenciaCatastral(expedientePrincipal.getReferenciaCatastral());
-        dto.setEstadoExpedienteId(expedientePrincipal.getEstadoExpediente().getId());
-        dto.setDepartamentoId(expedientePrincipal.getDepartamento().getId());
-        dto.setClasificacionId(expedientePrincipal.getClasificacion().getId());
-        if (expedientePrincipal.getEmpresa() != null) {
-            dto.setEmpresaId(expedientePrincipal.getEmpresa().getId());
-        }
-        dto.setPeticionarioId(expedientePrincipal.getPeticionario().getId());
+
+        // Check for null to avoid NullPointerException
+        dto.setEstadoExpedienteId(expedientePrincipal.getEstadoExpediente() != null ? expedientePrincipal.getEstadoExpediente().getId() : null);
+        dto.setDepartamentoId(expedientePrincipal.getDepartamento() != null ? expedientePrincipal.getDepartamento().getId() : null);
+        dto.setClasificacionId(expedientePrincipal.getClasificacion() != null ? expedientePrincipal.getClasificacion().getId() : null);
+        dto.setEmpresaId(expedientePrincipal.getEmpresa() != null ? expedientePrincipal.getEmpresa().getId() : null);
+        dto.setPeticionarioId(expedientePrincipal.getPeticionario() != null ? expedientePrincipal.getPeticionario().getId() : null);
         dto.setFechaInicio(expedientePrincipal.getFechaInicio());
-        dto.setExpedienteSecundarioIds(expedientePrincipal.getExpedienteSecundario().stream()
-                .map(ExpedienteSecundario::getId).collect(Collectors.toList()));
+
+        // If expedienteSecundarios is not null, collect their IDs
+        dto.setExpedienteSecundarioIds(expedientePrincipal.getExpedienteSecundarios() != null
+                ? expedientePrincipal.getExpedienteSecundarios().stream()
+                .map(ExpedienteSecundario::getId).collect(Collectors.toList())
+                : null);
         return dto;
     }
 
@@ -154,20 +159,31 @@ public class ExpedientePrincipalService {
         entity.setReferenciaCatastral(dto.getReferenciaCatastral());
         entity.setFechaInicio(dto.getFechaInicio());
 
-        // Cargar entidades existentes
-        entity.setEstadoExpediente(estadoExpedienteRepository.findById(dto.getEstadoExpedienteId()).orElseThrow());
-        entity.setDepartamento(departamentoRepository.findById(dto.getDepartamentoId()).orElseThrow());
-        entity.setClasificacion(clasificacionRepository.findById(dto.getClasificacionId()).orElseThrow());
+        // Load existing entities
+        entity.setEstadoExpediente(estadoExpedienteRepository.findById(dto.getEstadoExpedienteId())
+                .orElseThrow(() -> new RuntimeException("EstadoExpediente not found with id: " + dto.getEstadoExpedienteId())));
+        entity.setDepartamento(departamentoRepository.findById(dto.getDepartamentoId())
+                .orElseThrow(() -> new RuntimeException("Departamento not found with id: " + dto.getDepartamentoId())));
+        entity.setClasificacion(clasificacionRepository.findById(dto.getClasificacionId())
+                .orElseThrow(() -> new RuntimeException("Clasificacion not found with id: " + dto.getClasificacionId())));
 
         if (dto.getEmpresaId() != null) {
-            entity.setEmpresa(empresaRepository.findById(dto.getEmpresaId()).orElseThrow());
+            entity.setEmpresa(empresaRepository.findById(dto.getEmpresaId())
+                    .orElseThrow(() -> new RuntimeException("Empresa not found with id: " + dto.getEmpresaId())));
+        } else {
+            entity.setEmpresa(null);
         }
 
-        // Manejo de Peticionario
-        Peticionario peticionario = peticionarioRepository.findById(dto.getPeticionarioId())
-                .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + dto.getPeticionarioId()));
-        entity.setPeticionario(peticionario); // Asignar el peticionario existente
+        // Handle Peticionario, allowing null values
+        if (dto.getPeticionarioId() != null) {
+            Peticionario peticionario = peticionarioRepository.findById(dto.getPeticionarioId())
+                    .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + dto.getPeticionarioId()));
+            entity.setPeticionario(peticionario);
+        } else {
+            entity.setPeticionario(null);
+        }
 
+        // Handle ExpedienteSecundario relationship
         if (dto.getExpedienteSecundarioIds() != null) {
             List<ExpedienteSecundario> expedienteSecundarios = dto.getExpedienteSecundarioIds().stream()
                     .map(secundarioId -> {
@@ -176,7 +192,7 @@ public class ExpedientePrincipalService {
                         return es;
                     })
                     .collect(Collectors.toList());
-            entity.setExpedienteSecundario(expedienteSecundarios);
+            entity.setExpedienteSecundarios(expedienteSecundarios);
         }
 
         return entity;

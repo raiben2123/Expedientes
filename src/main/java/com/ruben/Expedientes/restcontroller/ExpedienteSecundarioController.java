@@ -1,12 +1,11 @@
 package com.ruben.Expedientes.restcontroller;
 
 import com.ruben.Expedientes.dto.ExpedienteSecundarioDTO;
-import com.ruben.Expedientes.model.ExpedienteSecundario;
 import com.ruben.Expedientes.service.ExpedienteSecundarioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -17,50 +16,44 @@ public class ExpedienteSecundarioController {
     private ExpedienteSecundarioService expedienteSecundarioService;
 
     @GetMapping
-    public List<ExpedienteSecundarioDTO> getAllExpedientesSecundarios() {
-        return expedienteSecundarioService.findAll();
+    public ResponseEntity<List<ExpedienteSecundarioDTO>> getAllExpedientesSecundarios() {
+        List<ExpedienteSecundarioDTO> expedientes = expedienteSecundarioService.findAll();
+        return ResponseEntity.ok(expedientes);
     }
 
     @GetMapping("/{id}")
-    public ExpedienteSecundarioDTO getExpedienteSecundarioId(@PathVariable Long id) {
-        return expedienteSecundarioService.findByIdSecundario(id);
+    public ResponseEntity<ExpedienteSecundarioDTO> getExpedienteSecundarioById(@PathVariable Long id) {
+        ExpedienteSecundarioDTO dto = expedienteSecundarioService.findByIdSecundario(id);
+        if (dto == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/expediente/{expediente}")
-    public List<ExpedienteSecundarioDTO> getExpedienteSecundarioExpediente(@PathVariable String expediente) {
-        return expedienteSecundarioService.findByExpediente(expediente);
+    public ResponseEntity<List<ExpedienteSecundarioDTO>> getExpedienteSecundarioByExpediente(@PathVariable String expediente) {
+        List<ExpedienteSecundarioDTO> expedientes = expedienteSecundarioService.findByExpediente(expediente);
+        return ResponseEntity.ok(expedientes);
     }
 
-//    // Asegúrate de que las rutas de los siguientes métodos sean únicas y correctas.
-//    @GetMapping("/solicitud/{solicitud}")
-//    public List<ExpedienteSecundarioDTO> getExpedienteSecundarioSolicitud(@PathVariable String solicitud) {
-//        return expedienteSecundarioService.findBySolicitud(solicitud);
-//    }
-
-//    @GetMapping("/registro/{registro}")
-//    public List<ExpedienteSecundarioDTO> getExpedienteSecundarioRegistro(@PathVariable String registro) {
-//        return expedienteSecundarioService.findByRegistro(registro);
-//    }
-
-//    @GetMapping("/fechaRegistro/{fechaRegistro}")
-//    public List<ExpedienteSecundarioDTO> getExpedienteSecundarioFechaRegistro(@PathVariable Date fechaRegistro) {
-//        return expedienteSecundarioService.findByFechaRegistro(fechaRegistro);
-//    }
-
-    // Otros métodos similares...
-
     @PostMapping
-    public ExpedienteSecundarioDTO createExpedienteSecundario(@RequestBody ExpedienteSecundarioDTO expedienteSecundarioDTO) {
-        return expedienteSecundarioService.saveSecundario(expedienteSecundarioDTO);
+    public ResponseEntity<ExpedienteSecundarioDTO> createExpedienteSecundario(@RequestBody ExpedienteSecundarioDTO expedienteSecundarioDTO) {
+        ExpedienteSecundarioDTO savedDTO = expedienteSecundarioService.saveSecundario(expedienteSecundarioDTO);
+        return ResponseEntity.ok(savedDTO);
     }
 
     @PutMapping("/{id}")
-    public ExpedienteSecundarioDTO updateExpedienteSecundario(@PathVariable Long id, @RequestBody ExpedienteSecundarioDTO expedienteSecundarioDTO) {
-        return expedienteSecundarioService.update(id, expedienteSecundarioDTO);
+    public ResponseEntity<ExpedienteSecundarioDTO> updateExpedienteSecundario(@PathVariable Long id, @RequestBody ExpedienteSecundarioDTO expedienteSecundarioDTO) {
+        ExpedienteSecundarioDTO updatedDTO = expedienteSecundarioService.update(id, expedienteSecundarioDTO);
+        if (updatedDTO == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedDTO);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteExpedienteSecundario(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteExpedienteSecundario(@PathVariable Long id) {
         expedienteSecundarioService.deleteSecundario(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -19,6 +19,6 @@ public interface ExpedientePrincipalRepository extends JpaRepository<ExpedienteP
     List<ExpedientePrincipal> findByEmpresa(Empresa empresa);
     List<ExpedientePrincipal> findByPeticionario(Peticionario peticionario);
     List<ExpedientePrincipal> findByFechaInicio(Date fechaInicio);
-    List<ExpedientePrincipal> findByExpedienteSecundario(ExpedienteSecundario expedienteSecundario);
+    List<ExpedientePrincipal> findByExpedienteSecundarios(ExpedienteSecundario expedienteSecundario);
 
 }

@@ -3,9 +3,9 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.ExpedientePrincipalDTO;
 import com.ruben.Expedientes.service.ExpedientePrincipalService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -16,32 +16,44 @@ public class ExpedientePrincipalController {
     private ExpedientePrincipalService expedientePrincipalService;
 
     @GetMapping
-    public List<ExpedientePrincipalDTO> getAllExpedientesPrincipales(){
-        return expedientePrincipalService.findAll();
+    public ResponseEntity<List<ExpedientePrincipalDTO>> getAllExpedientesPrincipales() {
+        List<ExpedientePrincipalDTO> expedientes = expedientePrincipalService.findAll();
+        return ResponseEntity.ok(expedientes);
     }
 
     @GetMapping("/{id}")
-    public ExpedientePrincipalDTO getExpedientePrincipalId(@PathVariable Long id){
-        return expedientePrincipalService.findByIdPrincipal(id);
+    public ResponseEntity<ExpedientePrincipalDTO> getExpedientePrincipalById(@PathVariable Long id) {
+        ExpedientePrincipalDTO dto = expedientePrincipalService.findByIdPrincipal(id);
+        if (dto == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/expediente/{expediente}")
-    public List<ExpedientePrincipalDTO> getExpedientePrincipalExpediente(@PathVariable String expediente){
-        return expedientePrincipalService.findByExpediente(expediente);
+    public ResponseEntity<List<ExpedientePrincipalDTO>> getExpedientePrincipalByExpediente(@PathVariable String expediente) {
+        List<ExpedientePrincipalDTO> expedientes = expedientePrincipalService.findByExpediente(expediente);
+        return ResponseEntity.ok(expedientes);
     }
 
     @PostMapping
-    public ExpedientePrincipalDTO createExpedientePrincipal(@RequestBody ExpedientePrincipalDTO expedientePrincipal){
-        return expedientePrincipalService.savePrincipal(expedientePrincipal);
+    public ResponseEntity<ExpedientePrincipalDTO> createExpedientePrincipal(@RequestBody ExpedientePrincipalDTO expedientePrincipal) {
+        ExpedientePrincipalDTO savedDTO = expedientePrincipalService.savePrincipal(expedientePrincipal);
+        return ResponseEntity.ok(savedDTO);
     }
 
     @PutMapping("/{id}")
-    public ExpedientePrincipalDTO updateExpedientePrincipal(@PathVariable Long id, @RequestBody ExpedientePrincipalDTO expedientePrincipal){
-        return expedientePrincipalService.update(id, expedientePrincipal);
+    public ResponseEntity<ExpedientePrincipalDTO> updateExpedientePrincipal(@PathVariable Long id, @RequestBody ExpedientePrincipalDTO expedientePrincipal) {
+        ExpedientePrincipalDTO updatedDTO = expedientePrincipalService.update(id, expedientePrincipal);
+        if (updatedDTO == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedDTO);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteExpedientePrincipal(@PathVariable Long id){
+    public ResponseEntity<Void> deleteExpedientePrincipal(@PathVariable Long id) {
         expedientePrincipalService.deletePrincipal(id);
+        return ResponseEntity.noContent().build();
     }
 }
