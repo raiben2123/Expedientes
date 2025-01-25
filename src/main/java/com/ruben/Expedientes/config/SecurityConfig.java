@@ -17,7 +17,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Desactiva CSRF (si no es necesario)
+                .csrf(csrf -> csrf.disable()) // Desactiva CSRF si no es necesario
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll() // Permitir todas las solicitudes sin autenticación
                 )
@@ -30,7 +30,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost")); // Cambia esto si es necesario
+        configuration.setAllowedOrigins(Arrays.asList("http://raiben2123.zapto.org", "https://raiben2123.zapto.org"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Métodos permitidos
         configuration.setAllowedHeaders(Arrays.asList("*")); // Permite todos los encabezados
         configuration.setAllowCredentials(true); // Permite credenciales si es necesario
