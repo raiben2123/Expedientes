@@ -30,7 +30,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://raiben2123.zapto.org", "https://raiben2123.zapto.org"));
+        configuration.setAllowedOrigins(Arrays.asList("http://raiben2123.zapto.org", "https://raiben2123.zapto.org", "http://localhost:9000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Métodos permitidos
         configuration.setAllowedHeaders(Arrays.asList("*")); // Permite todos los encabezados
         configuration.setAllowCredentials(true); // Permite credenciales si es necesario
