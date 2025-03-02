@@ -11,8 +11,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class ClasificacionService {
+
     @Autowired
     private ClasificacionRepository clasificacionRepository;
+
+    // Eliminamos la inyección de SimpMessagingTemplate ya que no lo usaremos aquí
 
     public ClasificacionDTO findById(Long id) {
         return clasificacionRepository.findById(id)
@@ -38,11 +41,11 @@ public class ClasificacionService {
         Clasificacion clasificacion = convertToEntity(clasificacionDTO);
         Clasificacion savedClasificacion = clasificacionRepository.save(clasificacion);
         return convertToDTO(savedClasificacion);
+        // Eliminamos notifyClasificacionesUpdate
     }
 
     public List<ClasificacionDTO> findAll() {
         List<Clasificacion> clasificaciones = clasificacionRepository.findAll();
-
         return clasificaciones.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -50,6 +53,7 @@ public class ClasificacionService {
 
     public void deleteClasificacion(Long id) {
         clasificacionRepository.deleteById(id);
+        // Eliminamos notifyClasificacionesUpdate
     }
 
     public ClasificacionDTO update(Long id, ClasificacionDTO clasificacionDetails) {
@@ -57,17 +61,19 @@ public class ClasificacionService {
                 .map(clasificacion -> {
                     clasificacion.setName(clasificacionDetails.getName());
                     clasificacion.setAcronym(clasificacionDetails.getAcronym());
-                    return convertToDTO(clasificacionRepository.save(clasificacion));
+                    ClasificacionDTO updatedDTO = convertToDTO(clasificacionRepository.save(clasificacion));
+                    // Eliminamos notifyClasificacionesUpdate
+                    return updatedDTO;
                 })
                 .orElse(null);
     }
 
     private ClasificacionDTO convertToDTO(Clasificacion clasificacion) {
-                ClasificacionDTO clasificacionDTO = new ClasificacionDTO();
-                clasificacionDTO.setId(clasificacion.getId());
-                clasificacionDTO.setName(clasificacion.getName());
-                clasificacionDTO.setAcronym(clasificacion.getAcronym());
-                return clasificacionDTO;
+        ClasificacionDTO clasificacionDTO = new ClasificacionDTO();
+        clasificacionDTO.setId(clasificacion.getId());
+        clasificacionDTO.setName(clasificacion.getName());
+        clasificacionDTO.setAcronym(clasificacion.getAcronym());
+        return clasificacionDTO;
     }
 
     private Clasificacion convertToEntity(ClasificacionDTO clasificacionDTO) {

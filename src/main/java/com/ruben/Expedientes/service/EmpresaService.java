@@ -6,6 +6,7 @@ import com.ruben.Expedientes.model.Peticionario;
 import com.ruben.Expedientes.repository.EmpresaRepository;
 import com.ruben.Expedientes.repository.PeticionarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class EmpresaService {
+
     @Autowired
     private EmpresaRepository empresaRepository;
 
@@ -72,7 +74,8 @@ public class EmpresaService {
     public EmpresaDTO saveEmpresa(EmpresaDTO empresaDTO) {
         Empresa empresa = convertToEntity(empresaDTO);
         Empresa savedEmpresa = empresaRepository.save(empresa);
-        return convertToDTO(savedEmpresa);
+        EmpresaDTO savedDTO = convertToDTO(savedEmpresa);
+        return savedDTO;
     }
 
     public List<EmpresaDTO> findAll() {
@@ -101,7 +104,8 @@ public class EmpresaService {
             } else {
                 empresa.setRepresentante(null); // Establecemos el representante a null si el ID es null
             }
-            return convertToDTO(empresaRepository.save(empresa));
+            EmpresaDTO updatedDTO = convertToDTO(empresaRepository.save(empresa));
+            return updatedDTO;
         }
         return null;
     }

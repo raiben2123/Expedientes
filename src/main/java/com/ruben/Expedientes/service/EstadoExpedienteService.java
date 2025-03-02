@@ -4,6 +4,7 @@ import com.ruben.Expedientes.dto.EstadoExpedienteDTO;
 import com.ruben.Expedientes.model.EstadoExpediente;
 import com.ruben.Expedientes.repository.EstadoExpedienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,7 +33,8 @@ public class EstadoExpedienteService {
     public EstadoExpedienteDTO saveEstadoExpediente(EstadoExpedienteDTO estadoExpedienteDTO) {
         EstadoExpediente estadoExpediente = convertToEntity(estadoExpedienteDTO);
         EstadoExpediente savedEstadoExpediente = estadoExpedienteRepository.save(estadoExpediente);
-        return convertToDTO(savedEstadoExpediente);
+        EstadoExpedienteDTO savedDTO = convertToDTO(savedEstadoExpediente);
+        return savedDTO;
     }
 
     public List<EstadoExpedienteDTO> findAll() {
@@ -50,7 +52,8 @@ public class EstadoExpedienteService {
         return estadoExpedienteRepository.findById(id)
                 .map(existingEstado -> {
                     existingEstado.setName(estadoExpedienteDTO.getName());
-                    return convertToDTO(estadoExpedienteRepository.save(existingEstado));
+                    EstadoExpedienteDTO updatedDTO = convertToDTO(estadoExpedienteRepository.save(existingEstado));
+                    return updatedDTO;
                 })
                 .orElseThrow(() -> new RuntimeException("EstadoExpediente not found with id: " + id));
     }

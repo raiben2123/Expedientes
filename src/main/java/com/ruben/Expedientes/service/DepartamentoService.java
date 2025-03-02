@@ -4,6 +4,7 @@ import com.ruben.Expedientes.dto.DepartamentoDTO;
 import com.ruben.Expedientes.model.Departamento;
 import com.ruben.Expedientes.repository.DepartamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class DepartamentoService {
+
     @Autowired
     private DepartamentoRepository departamentoRepository;
 
@@ -36,7 +38,8 @@ public class DepartamentoService {
     public DepartamentoDTO saveDepartamento(DepartamentoDTO departamentoDTO) {
         Departamento departamento = convertToEntity(departamentoDTO);
         Departamento savedDepartamento = departamentoRepository.save(departamento);
-        return convertToDTO(savedDepartamento);
+        DepartamentoDTO savedDTO = convertToDTO(savedDepartamento);
+        return savedDTO;
     }
 
     public void deleteDepartamento(Long id) {
@@ -47,7 +50,8 @@ public class DepartamentoService {
         Departamento departamento = departamentoRepository.findById(id).orElse(null);
         if (departamento != null) {
             departamento.setName(departamentoDetails.getName());
-            return convertToDTO(departamentoRepository.save(departamento));
+            DepartamentoDTO updatedDTO = convertToDTO(departamentoRepository.save(departamento));
+            return updatedDTO;
         }
         return null;
     }

@@ -1,8 +1,10 @@
 package com.ruben.Expedientes.restcontroller;
 
 import com.ruben.Expedientes.dto.ExpedientePrincipalDTO;
+import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ExpedientePrincipalService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,9 @@ public class ExpedientePrincipalController {
 
     @Autowired
     private ExpedientePrincipalService expedientePrincipalService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
     public ResponseEntity<List<ExpedientePrincipalDTO>> getAllExpedientesPrincipales() {
@@ -39,6 +44,8 @@ public class ExpedientePrincipalController {
     @PostMapping
     public ResponseEntity<ExpedientePrincipalDTO> createExpedientePrincipal(@RequestBody ExpedientePrincipalDTO expedientePrincipal) {
         ExpedientePrincipalDTO savedDTO = expedientePrincipalService.savePrincipal(expedientePrincipal);
+        messagingTemplate.convertAndSend("/topic/expedientes-principales",
+                new WebSocketMessage("CREATE", savedDTO));
         return ResponseEntity.ok(savedDTO);
     }
 
@@ -48,12 +55,16 @@ public class ExpedientePrincipalController {
         if (updatedDTO == null) {
             return ResponseEntity.notFound().build();
         }
+        messagingTemplate.convertAndSend("/topic/expedientes-principales",
+                new WebSocketMessage("UPDATE", updatedDTO));
         return ResponseEntity.ok(updatedDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteExpedientePrincipal(@PathVariable Long id) {
         expedientePrincipalService.deletePrincipal(id);
+        messagingTemplate.convertAndSend("/topic/expedientes-principales",
+                new WebSocketMessage("DELETE", id));
         return ResponseEntity.noContent().build();
     }
 }

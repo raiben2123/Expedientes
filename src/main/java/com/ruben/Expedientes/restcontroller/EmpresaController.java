@@ -1,12 +1,12 @@
 package com.ruben.Expedientes.restcontroller;
 
 import com.ruben.Expedientes.dto.EmpresaDTO;
+import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.EmpresaService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.ErrorResponseException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.rmi.NotBoundException;
 import java.util.Collections;
 import java.util.List;
 
@@ -16,6 +16,9 @@ public class EmpresaController {
 
     @Autowired
     private EmpresaService empresaService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
     public List<EmpresaDTO> getAllEmpresas() {
@@ -31,7 +34,7 @@ public class EmpresaController {
     public List<EmpresaDTO> getEmpresaCif(@PathVariable String cif) {
         List<EmpresaDTO> empresas = empresaService.findByCif(cif);
         if (empresas.isEmpty()) {
-            return Collections.emptyList(); // Devuelve una lista vacía si no se encuentra ninguna empresa
+            return Collections.emptyList();
         }
         return empresas;
     }
@@ -63,16 +66,24 @@ public class EmpresaController {
 
     @PostMapping
     public EmpresaDTO createEmpresa(@RequestBody EmpresaDTO empresaDTO) {
-        return empresaService.saveEmpresa(empresaDTO);
+        EmpresaDTO savedEmpresa = empresaService.saveEmpresa(empresaDTO);
+        messagingTemplate.convertAndSend("/topic/empresas",
+                new WebSocketMessage("CREATE", savedEmpresa));
+        return savedEmpresa;
     }
 
     @PutMapping("/{id}")
     public EmpresaDTO updateEmpresa(@PathVariable Long id, @RequestBody EmpresaDTO empresaDTO) {
-        return empresaService.update(id, empresaDTO);
+        EmpresaDTO updatedEmpresa = empresaService.update(id, empresaDTO);
+        messagingTemplate.convertAndSend("/topic/empresas",
+                new WebSocketMessage("UPDATE", updatedEmpresa));
+        return updatedEmpresa;
     }
 
     @DeleteMapping("/{id}")
     public void deleteEmpresa(@PathVariable Long id) {
         empresaService.deleteEmpresa(id);
+        messagingTemplate.convertAndSend("/topic/empresas",
+                new WebSocketMessage("DELETE", id));
     }
 }

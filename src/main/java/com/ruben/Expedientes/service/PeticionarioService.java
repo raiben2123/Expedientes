@@ -10,6 +10,7 @@ import com.ruben.Expedientes.model.PeticionarioNIF;
 import com.ruben.Expedientes.repository.EmpresaRepository;
 import com.ruben.Expedientes.repository.PeticionarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,6 +26,9 @@ public class PeticionarioService {
     @Autowired
     private EmpresaRepository empresaRepository;
 
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate; // Inyectamos SimpMessagingTemplate para WebSocket
+
     public List<PeticionarioDTO> findAll() {
         return peticionarioRepository.findAll().stream()
                 .map(this::convertToDTO)
@@ -32,14 +36,14 @@ public class PeticionarioService {
     }
 
     public PeticionarioDTO findById(Long id) {
-        return convertToDTO(peticionarioRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado")));
+        return convertToDTO(peticionarioRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado")));
     }
-
-    // ... otros métodos de búsqueda ...
 
     public PeticionarioDTO save(PeticionarioDTO peticionarioDTO) {
         Peticionario peticionario = convertToEntity(peticionarioDTO);
-        return convertToDTO(peticionarioRepository.save(peticionario));
+        Peticionario savedPeticionario = peticionarioRepository.save(peticionario);
+        return convertToDTO(savedPeticionario);
     }
 
     public PeticionarioDTO update(Long id, PeticionarioDTO peticionarioDetails) {
@@ -58,6 +62,8 @@ public class PeticionarioService {
             Empresa empresa = empresaRepository.findById(peticionarioDetails.getRepresentaId())
                     .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada"));
             peticionario.setRepresenta(empresa);
+        } else {
+            peticionario.setRepresenta(null);
         }
 
         // Actualiza según el tipo de Peticionario
@@ -69,7 +75,8 @@ public class PeticionarioService {
             nifPeticionario.setNif(((PeticionarioNIFDTO) peticionarioDetails).getNif());
         }
 
-        return convertToDTO(peticionarioRepository.save(peticionario));
+        Peticionario updatedPeticionario = peticionarioRepository.save(peticionario);
+        return convertToDTO(updatedPeticionario);
     }
 
     public void deletePeticionario(Long id) {
@@ -99,7 +106,6 @@ public class PeticionarioService {
         dto.setTlf(peticionario.getTlf());
         dto.setEmail(peticionario.getEmail());
         dto.setRepresentaId(peticionario.getRepresenta() != null ? peticionario.getRepresenta().getId() : null);
-        // Aquí no manejamos expedientePrincipalList y expedienteSecundarioList ya que no son parte del modelo Peticionario directamente
 
         return dto;
     }
@@ -114,7 +120,6 @@ public class PeticionarioService {
             entity = new PeticionarioNIF();
             ((PeticionarioNIF) entity).setNif(((PeticionarioNIFDTO) dto).getNif());
         } else {
-            // Manejo de un Peticionario genérico si es necesario
             entity = new Peticionario() {
                 @Override
                 public String getTipoPeticionario() {
@@ -136,8 +141,6 @@ public class PeticionarioService {
         } else {
             entity.setRepresenta(null);
         }
-
-        // Aquí no manejamos expedientePrincipalList y expedienteSecundarioList ya que estas relaciones no son directas en el modelo Peticionario
 
         return entity;
     }

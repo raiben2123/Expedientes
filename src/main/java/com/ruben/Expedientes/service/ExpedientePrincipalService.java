@@ -4,6 +4,7 @@ import com.ruben.Expedientes.dto.ExpedientePrincipalDTO;
 import com.ruben.Expedientes.model.*;
 import com.ruben.Expedientes.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -31,6 +32,9 @@ public class ExpedientePrincipalService {
 
     @Autowired
     private PeticionarioRepository peticionarioRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate; // Add this for WebSocket notifications
 
     public List<ExpedientePrincipalDTO> findAll() {
         return expedientePrincipalRepository.findAll()
@@ -62,7 +66,8 @@ public class ExpedientePrincipalService {
 
         ExpedientePrincipal expedientePrincipal = convertToEntity(expedientePrincipalDTO);
         ExpedientePrincipal savedExpediente = expedientePrincipalRepository.save(expedientePrincipal);
-        return convertToDTO(savedExpediente);
+        ExpedientePrincipalDTO savedDTO = convertToDTO(savedExpediente);
+        return savedDTO;
     }
 
     public void deletePrincipal(Long id) {
@@ -117,7 +122,8 @@ public class ExpedientePrincipalService {
                         existingExpediente.setExpedienteSecundarios(expedienteSecundarios);
                     }
 
-                    return convertToDTO(expedientePrincipalRepository.save(existingExpediente));
+                    ExpedientePrincipalDTO updatedDTO = convertToDTO(expedientePrincipalRepository.save(existingExpediente));
+                    return updatedDTO;
                 })
                 .orElse(null);
     }

@@ -4,6 +4,7 @@ import com.ruben.Expedientes.dto.ExpedienteSecundarioDTO;
 import com.ruben.Expedientes.model.*;
 import com.ruben.Expedientes.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExpedienteSecundarioService {
+
     @Autowired
     private ExpedienteSecundarioRepository expedienteSecundarioRepository;
 
@@ -32,6 +34,9 @@ public class ExpedienteSecundarioService {
 
     @Autowired
     private ExpedientePrincipalRepository expedientePrincipalRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate; // Add this for WebSocket notifications
 
     public ExpedienteSecundarioDTO findByIdSecundario(Long id) {
         return expedienteSecundarioRepository.findById(id)
@@ -55,7 +60,8 @@ public class ExpedienteSecundarioService {
 
     public ExpedienteSecundarioDTO saveSecundario(ExpedienteSecundarioDTO expedienteSecundarioDTO) {
         ExpedienteSecundario expedienteSecundario = convertToEntity(expedienteSecundarioDTO);
-        return convertToDTO(expedienteSecundarioRepository.save(expedienteSecundario));
+        ExpedienteSecundarioDTO savedDTO = convertToDTO(expedienteSecundarioRepository.save(expedienteSecundario));
+        return savedDTO;
     }
 
     public void deleteSecundario(Long id) {
@@ -102,7 +108,8 @@ public class ExpedienteSecundarioService {
                     existingExpediente.setExpedientePrincipal(expedientePrincipalRepository.findById(expedienteSecundarioDetails.getExpedientePrincipalId())
                             .orElseThrow(() -> new RuntimeException("ExpedientePrincipal not found with id: " + expedienteSecundarioDetails.getExpedientePrincipalId())));
 
-                    return convertToDTO(expedienteSecundarioRepository.save(existingExpediente));
+                    ExpedienteSecundarioDTO updatedDTO = convertToDTO(expedienteSecundarioRepository.save(existingExpediente));
+                    return updatedDTO;
                 })
                 .orElse(null);
     }
