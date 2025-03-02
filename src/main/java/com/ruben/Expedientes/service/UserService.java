@@ -20,9 +20,6 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate; // Para enviar mensajes WebSocket
-
     public User registerUser(User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
             throw new IllegalArgumentException("El usuario ya existe");
