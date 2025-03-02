@@ -4,6 +4,7 @@ import com.ruben.Expedientes.model.Ticket;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.JwtService;
 import com.ruben.Expedientes.service.TicketService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -23,15 +24,14 @@ public class TicketController {
     private JwtService jwtService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @PostMapping
     public ResponseEntity<?> createTicket(@RequestBody Ticket ticket, @RequestHeader("Authorization") String token) {
         try {
             String username = extractUsernameFromToken(token);
             Ticket createdTicket = ticketService.createTicket(ticket, username);
-            messagingTemplate.convertAndSend("/topic/tickets",
-                    new WebSocketMessage("CREATE", createdTicket));
+            notificationService.notifyCreated(WebSocketNotificationService.EntityType.TICKETS, createdTicket);
             return ResponseEntity.ok(createdTicket);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(404).body(e.getMessage());
@@ -49,8 +49,7 @@ public class TicketController {
     public ResponseEntity<?> updateTicketStatus(@PathVariable Long id, @RequestBody Ticket updatedTicket) {
         try {
             Ticket ticket = ticketService.updateTicketStatus(id, updatedTicket.getStatus());
-            messagingTemplate.convertAndSend("/topic/tickets",
-                    new WebSocketMessage("UPDATE", ticket));
+            notificationService.notifyUpdated(WebSocketNotificationService.EntityType.TICKETS, ticket);
             return ResponseEntity.ok(ticket);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(404).body(e.getMessage());
@@ -64,8 +63,7 @@ public class TicketController {
         try {
             String username = extractUsernameFromToken(token);
             ticketService.deleteTicket(id);
-            messagingTemplate.convertAndSend("/topic/tickets",
-                    new WebSocketMessage("DELETE", id));
+            notificationService.notifyDeleted(WebSocketNotificationService.EntityType.TICKETS, id);
             return ResponseEntity.ok("Ticket eliminado con éxito");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(404).body(e.getMessage());

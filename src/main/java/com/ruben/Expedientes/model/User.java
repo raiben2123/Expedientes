@@ -13,6 +13,7 @@ import java.util.Collections;
 @Getter
 @Setter
 @Entity
+@Table(name = "app_users")
 public class User implements UserDetails {
 
     @Id

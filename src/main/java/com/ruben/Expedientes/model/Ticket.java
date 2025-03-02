@@ -26,8 +26,9 @@ public class Ticket implements Serializable {
     @Column(nullable = false)
     private String status = "OPEN"; // OPEN, IN_PROGRESS, CLOSED
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false,
+            referencedColumnName = "id")
     private User createdBy;
 
     @Column(nullable = false)

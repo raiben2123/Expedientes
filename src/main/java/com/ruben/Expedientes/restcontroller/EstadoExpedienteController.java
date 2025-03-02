@@ -3,6 +3,7 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.EstadoExpedienteDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.EstadoExpedienteService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ public class EstadoExpedienteController {
     private EstadoExpedienteService estadoExpedienteService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public List<EstadoExpedienteDTO> getAllEstadosExpedientes() {
@@ -37,23 +38,20 @@ public class EstadoExpedienteController {
     @PostMapping
     public EstadoExpedienteDTO createEstadoExpediente(@RequestBody EstadoExpedienteDTO estadoExpedienteDTO) {
         EstadoExpedienteDTO savedEstado = estadoExpedienteService.saveEstadoExpediente(estadoExpedienteDTO);
-        messagingTemplate.convertAndSend("/topic/estados-expediente",
-                new WebSocketMessage("CREATE", savedEstado));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.ESTADOS_EXPEDIENTES, savedEstado);
         return savedEstado;
     }
 
     @PutMapping("/{id}")
     public EstadoExpedienteDTO updateEstadoExpediente(@PathVariable Long id, @RequestBody EstadoExpedienteDTO estadoExpedienteDTO) {
         EstadoExpedienteDTO updatedEstado = estadoExpedienteService.update(id, estadoExpedienteDTO);
-        messagingTemplate.convertAndSend("/topic/estados-expediente",
-                new WebSocketMessage("UPDATE", updatedEstado));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.ESTADOS_EXPEDIENTES, updatedEstado);
         return updatedEstado;
     }
 
     @DeleteMapping("/{id}")
     public void deleteEstadoExpediente(@PathVariable Long id) {
         estadoExpedienteService.deleteEstadoExpediente(id);
-        messagingTemplate.convertAndSend("/topic/estados-expediente",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.ESTADOS_EXPEDIENTES, id);
     }
 }

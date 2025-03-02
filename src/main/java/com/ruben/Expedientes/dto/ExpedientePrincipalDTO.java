@@ -2,26 +2,42 @@ package com.ruben.Expedientes.dto;
 
 import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
+@Builder
 public class ExpedientePrincipalDTO {
+
     private Long id;
-    private String expediente;
-    private String solicitud;
-    private String registro;
-    private Date fechaRegistro;
-    private String objeto;
+
+    private String numeroExpediente;
+
+    private String numeroSolicitud;
+    private String numeroRegistro;
+
+    private LocalDateTime fechaRegistro;
+
+    private LocalDateTime fechaInicio;
+    private LocalDateTime fechaFinalizacion;
+    private String descripcion;
     private String referenciaCatastral;
+    private String ubicacion;
+    private String observaciones;
+
+    // IDs de relaciones obligatorias
     private Long estadoExpedienteId;
+
     private Long departamentoId;
+
     private Long clasificacionId;
+
+    // Solo uno de estos dos puede estar presente
     private Long empresaId;
     private Long peticionarioId;
-    private Date fechaInicio;
-    private List<Long> expedienteSecundarioIds; // Only IDs for secondary expedientes linked to this principal
+
+    // Lista de IDs de expedientes secundarios (solo para consulta)
+    private List<Long> expedienteSecundarioIds;
 }

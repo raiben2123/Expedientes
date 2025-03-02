@@ -5,6 +5,7 @@ import com.ruben.Expedientes.dto.PeticionarioDTO;
 import com.ruben.Expedientes.dto.PeticionarioNIFDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.PeticionarioService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,7 +22,7 @@ public class PeticionarioController {
     private final PeticionarioService peticionarioService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public List<PeticionarioDTO> getAllPeticionarios() {
@@ -36,24 +37,21 @@ public class PeticionarioController {
     @PostMapping
     public ResponseEntity<PeticionarioDTO> createPeticionario(@RequestBody PeticionarioDTO peticionarioDTO) {
         PeticionarioDTO savedDTO = peticionarioService.save(peticionarioDTO);
-        messagingTemplate.convertAndSend("/topic/peticionarios",
-                new WebSocketMessage("CREATE", savedDTO));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.PETICIONARIOS, savedDTO);
         return ResponseEntity.ok(savedDTO);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PeticionarioDTO> updatePeticionario(@PathVariable Long id, @RequestBody PeticionarioDTO peticionarioDetails) {
         PeticionarioDTO updatedDTO = peticionarioService.update(id, peticionarioDetails);
-        messagingTemplate.convertAndSend("/topic/peticionarios",
-                new WebSocketMessage("UPDATE", updatedDTO));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.PETICIONARIOS, updatedDTO);
         return ResponseEntity.ok(updatedDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePeticionario(@PathVariable Long id) {
         peticionarioService.deletePeticionario(id);
-        messagingTemplate.convertAndSend("/topic/peticionarios",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.PETICIONARIOS, id);
         return ResponseEntity.noContent().build();
     }
 

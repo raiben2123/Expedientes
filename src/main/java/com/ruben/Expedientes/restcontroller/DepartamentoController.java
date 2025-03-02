@@ -3,6 +3,7 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.DepartamentoDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.DepartamentoService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class DepartamentoController {
     private DepartamentoService departamentoService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public List<DepartamentoDTO> getAllDepartamentos() {
@@ -43,8 +44,7 @@ public class DepartamentoController {
     public DepartamentoDTO createDepartamento(@RequestBody DepartamentoDTO departamentoDTO) {
         DepartamentoDTO savedDepartamento = departamentoService.saveDepartamento(departamentoDTO);
         // Enviar mensaje WebSocket con la acción CREATE y el objeto creado
-        messagingTemplate.convertAndSend("/topic/departamentos",
-                new WebSocketMessage("CREATE", savedDepartamento));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.DEPARTAMENTOS, savedDepartamento);
         return savedDepartamento;
     }
 
@@ -52,8 +52,7 @@ public class DepartamentoController {
     public DepartamentoDTO updateDepartamento(@PathVariable Long id, @RequestBody DepartamentoDTO departamentoDTO) {
         DepartamentoDTO updatedDepartamento = departamentoService.update(id, departamentoDTO);
         // Enviar mensaje WebSocket con la acción UPDATE y el objeto actualizado
-        messagingTemplate.convertAndSend("/topic/departamentos",
-                new WebSocketMessage("UPDATE", updatedDepartamento));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.DEPARTAMENTOS, updatedDepartamento);
         return updatedDepartamento;
     }
 
@@ -61,7 +60,6 @@ public class DepartamentoController {
     public void deleteDepartamento(@PathVariable Long id) {
         departamentoService.deleteDepartamento(id);
         // Enviar mensaje WebSocket con la acción DELETE y el ID eliminado
-        messagingTemplate.convertAndSend("/topic/departamentos",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.DEPARTAMENTOS, id);
     }
 }

@@ -9,85 +9,148 @@ import com.ruben.Expedientes.model.PeticionarioDNI;
 import com.ruben.Expedientes.model.PeticionarioNIF;
 import com.ruben.Expedientes.repository.EmpresaRepository;
 import com.ruben.Expedientes.repository.PeticionarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
 public class PeticionarioService {
 
-    @Autowired
-    private PeticionarioRepository peticionarioRepository;
+    private final PeticionarioRepository peticionarioRepository;
+    private final EmpresaRepository empresaRepository;
 
-    @Autowired
-    private EmpresaRepository empresaRepository;
-
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate; // Inyectamos SimpMessagingTemplate para WebSocket
-
+    @Transactional(readOnly = true)
     public List<PeticionarioDTO> findAll() {
         return peticionarioRepository.findAll().stream()
+                .filter(Peticionario::getActive) // Solo activos
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public PeticionarioDTO findById(Long id) {
-        return convertToDTO(peticionarioRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado")));
+        Peticionario peticionario = peticionarioRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado con ID: " + id));
+
+        if (!peticionario.getActive()) {
+            throw new NoSuchElementException("Peticionario no encontrado (inactivo)");
+        }
+
+        return convertToDTO(peticionario);
     }
 
     public PeticionarioDTO save(PeticionarioDTO peticionarioDTO) {
+        // Validar que no existe un peticionario con el mismo documento
+        validateUniqueDocument(peticionarioDTO, null);
+
         Peticionario peticionario = convertToEntity(peticionarioDTO);
+        peticionario.setCreatedAt(LocalDateTime.now());
+        peticionario.setUpdatedAt(LocalDateTime.now());
+
         Peticionario savedPeticionario = peticionarioRepository.save(peticionario);
+        log.info("Peticionario created: {} ({})", savedPeticionario.getNombreCompleto(),
+                savedPeticionario.getTipoPeticionario());
+
         return convertToDTO(savedPeticionario);
     }
 
     public PeticionarioDTO update(Long id, PeticionarioDTO peticionarioDetails) {
-        Peticionario peticionario = peticionarioRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado"));
+        Peticionario existingPeticionario = peticionarioRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado con ID: " + id));
 
-        // Actualiza campos comunes
-        peticionario.setName(peticionarioDetails.getName());
-        peticionario.setSurname(peticionarioDetails.getSurname());
-        peticionario.setAddress(peticionarioDetails.getAddress());
-        peticionario.setTlf(peticionarioDetails.getTlf());
-        peticionario.setEmail(peticionarioDetails.getEmail());
+        // Validar que no existe otro peticionario con el mismo documento
+        validateUniqueDocument(peticionarioDetails, id);
 
-        // Actualiza el representante
+        // Actualizar campos comunes
+        existingPeticionario.setName(peticionarioDetails.getName());
+        existingPeticionario.setSurname(peticionarioDetails.getSurname());
+        existingPeticionario.setAddress(peticionarioDetails.getAddress());
+        existingPeticionario.setTlf(peticionarioDetails.getTlf());
+        existingPeticionario.setEmail(peticionarioDetails.getEmail());
+        existingPeticionario.setUpdatedAt(LocalDateTime.now());
+
+        // Actualizar empresa que representa
         if (peticionarioDetails.getRepresentaId() != null) {
             Empresa empresa = empresaRepository.findById(peticionarioDetails.getRepresentaId())
                     .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada"));
-            peticionario.setRepresenta(empresa);
+            existingPeticionario.setRepresenta(empresa);
         } else {
-            peticionario.setRepresenta(null);
+            existingPeticionario.setRepresenta(null);
         }
 
-        // Actualiza según el tipo de Peticionario
-        if (peticionario instanceof PeticionarioDNI && peticionarioDetails instanceof PeticionarioDNIDTO) {
-            PeticionarioDNI dniPeticionario = (PeticionarioDNI) peticionario;
-            dniPeticionario.setDni(((PeticionarioDNIDTO) peticionarioDetails).getDni());
-        } else if (peticionario instanceof PeticionarioNIF && peticionarioDetails instanceof PeticionarioNIFDTO) {
-            PeticionarioNIF nifPeticionario = (PeticionarioNIF) peticionario;
-            nifPeticionario.setNif(((PeticionarioNIFDTO) peticionarioDetails).getNif());
+        // Actualizar documento según el tipo
+        if (existingPeticionario instanceof PeticionarioDNI && peticionarioDetails instanceof PeticionarioDNIDTO) {
+            PeticionarioDNI dniPeticionario = (PeticionarioDNI) existingPeticionario;
+            String dni = ((PeticionarioDNIDTO) peticionarioDetails).getDni();
+            dniPeticionario.setDni(dni);
+
+        } else if (existingPeticionario instanceof PeticionarioNIF && peticionarioDetails instanceof PeticionarioNIFDTO) {
+            PeticionarioNIF nifPeticionario = (PeticionarioNIF) existingPeticionario;
+            String nif = ((PeticionarioNIFDTO) peticionarioDetails).getNif();
+            nifPeticionario.setNif(nif);
+        } else {
+            throw new IllegalArgumentException("Tipo de peticionario no coincide con el DTO proporcionado");
         }
 
-        Peticionario updatedPeticionario = peticionarioRepository.save(peticionario);
+        Peticionario updatedPeticionario = peticionarioRepository.save(existingPeticionario);
+        log.info("Peticionario updated: {} ({})", updatedPeticionario.getNombreCompleto(),
+                updatedPeticionario.getTipoPeticionario());
+
         return convertToDTO(updatedPeticionario);
     }
 
     public void deletePeticionario(Long id) {
-        if (!peticionarioRepository.existsById(id)) {
-            throw new NoSuchElementException("Peticionario no encontrado");
+        Peticionario peticionario = peticionarioRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado con ID: " + id));
+
+        // Soft delete
+        peticionario.setActive(false);
+        peticionario.setUpdatedAt(LocalDateTime.now());
+        peticionarioRepository.save(peticionario);
+
+        log.info("Peticionario soft deleted: {} ({})", peticionario.getNombreCompleto(),
+                peticionario.getTipoPeticionario());
+    }
+
+    // Métodos de utilidad privados
+
+    private void validateUniqueDocument(PeticionarioDTO dto, Long excludeId) {
+        String document = null;
+        String tipoDocumento = null;
+
+        if (dto instanceof PeticionarioDNIDTO) {
+            document = ((PeticionarioDNIDTO) dto).getDni();
+            tipoDocumento = "DNI";
+        } else if (dto instanceof PeticionarioNIFDTO) {
+            document = ((PeticionarioNIFDTO) dto).getNif();
+            tipoDocumento = "NIF";
         }
-        peticionarioRepository.deleteById(id);
+
+        if (document != null) {
+            List<Peticionario> existing = tipoDocumento.equals("DNI")
+                    ? peticionarioRepository.findByDni(document)
+                    : peticionarioRepository.findByNif(document);
+
+            boolean documentExists = existing.stream()
+                    .anyMatch(p -> p.getActive() && !p.getId().equals(excludeId));
+
+            if (documentExists) {
+                throw new IllegalArgumentException("Ya existe un peticionario con " + tipoDocumento + ": " + document);
+            }
+        }
     }
 
     private PeticionarioDTO convertToDTO(Peticionario peticionario) {
-        PeticionarioDTO dto = null;
+        PeticionarioDTO dto;
 
         if (peticionario instanceof PeticionarioDNI) {
             PeticionarioDNI dniPeticionario = (PeticionarioDNI) peticionario;
@@ -97,8 +160,11 @@ public class PeticionarioService {
             PeticionarioNIF nifPeticionario = (PeticionarioNIF) peticionario;
             dto = new PeticionarioNIFDTO();
             ((PeticionarioNIFDTO) dto).setNif(nifPeticionario.getNif());
+        } else {
+            throw new IllegalStateException("Tipo de peticionario no reconocido: " + peticionario.getClass());
         }
 
+        // Campos comunes
         dto.setId(peticionario.getId());
         dto.setName(peticionario.getName());
         dto.setSurname(peticionario.getSurname());
@@ -114,32 +180,31 @@ public class PeticionarioService {
         Peticionario entity;
 
         if (dto instanceof PeticionarioDNIDTO) {
+            PeticionarioDNIDTO dniDTO = (PeticionarioDNIDTO) dto;
             entity = new PeticionarioDNI();
-            ((PeticionarioDNI) entity).setDni(((PeticionarioDNIDTO) dto).getDni());
+            ((PeticionarioDNI) entity).setDni(dniDTO.getDni());
         } else if (dto instanceof PeticionarioNIFDTO) {
+            PeticionarioNIFDTO nifDTO = (PeticionarioNIFDTO) dto;
             entity = new PeticionarioNIF();
-            ((PeticionarioNIF) entity).setNif(((PeticionarioNIFDTO) dto).getNif());
+            ((PeticionarioNIF) entity).setNif(nifDTO.getNif());
         } else {
-            entity = new Peticionario() {
-                @Override
-                public String getTipoPeticionario() {
-                    throw new UnsupportedOperationException("Not supported yet.");
-                }
-            };
+            throw new IllegalArgumentException("Tipo de DTO de peticionario no soportado: " + dto.getClass());
         }
 
+        // Campos comunes
         entity.setId(dto.getId());
         entity.setName(dto.getName());
         entity.setSurname(dto.getSurname());
         entity.setAddress(dto.getAddress());
         entity.setTlf(dto.getTlf());
         entity.setEmail(dto.getEmail());
+        entity.setActive(true);
 
+        // Empresa que representa
         if (dto.getRepresentaId() != null) {
-            entity.setRepresenta(empresaRepository.findById(dto.getRepresentaId())
-                    .orElseThrow(() -> new RuntimeException("Empresa not found with id: " + dto.getRepresentaId())));
-        } else {
-            entity.setRepresenta(null);
+            Empresa empresa = empresaRepository.findById(dto.getRepresentaId())
+                    .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada con ID: " + dto.getRepresentaId()));
+            entity.setRepresenta(empresa);
         }
 
         return entity;

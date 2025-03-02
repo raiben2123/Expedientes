@@ -11,18 +11,30 @@ import java.util.List;
         @JsonSubTypes.Type(value = PeticionarioDNIDTO.class, name = "DNI"),
         @JsonSubTypes.Type(value = PeticionarioNIFDTO.class, name = "NIF")
 })
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
 public abstract class PeticionarioDTO {
+
     private Long id;
+
     private String name;
+
     private String surname;
+
     private String address;
+
     private String tlf;
+
     private String email;
-    private Long representaId; // Solo el ID
-    private List<Long> expedientePrincipalList; // Solo el ID, para evitar sobrecarga de datos
-    private List<Long> expedienteSecundarioList; // Solo el ID, para evitar sobrecarga de datos
+
+    private Long representaId; // ID de la empresa que representa
+
+    // Solo para consultas - no se usan en creación/actualización
+    private List<Long> expedientePrincipalList;
+    private List<Long> expedienteSecundarioList;
+
+    // Método abstracto que implementarán las subclases
+    public abstract String getTipoDocumento();
+    public abstract String getNumeroDocumento();
 }

@@ -3,10 +3,10 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.ClasificacionDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ClasificacionService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -18,7 +18,7 @@ public class ClasificacionController {
     private ClasificacionService clasificacionService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public List<ClasificacionDTO> getAllClasificaciones() {
@@ -47,23 +47,20 @@ public class ClasificacionController {
     @PostMapping
     public ClasificacionDTO createClasificacion(@RequestBody ClasificacionDTO clasificacionDTO) {
         ClasificacionDTO savedClasificacion = clasificacionService.saveClasificacion(clasificacionDTO);
-        messagingTemplate.convertAndSend("/topic/clasificaciones",
-                new WebSocketMessage("CREATE", savedClasificacion));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.CLASIFICACIONES, savedClasificacion);
         return savedClasificacion;
     }
 
     @PutMapping("/{id}")
     public ClasificacionDTO updateClasificacion(@PathVariable Long id, @RequestBody ClasificacionDTO clasificacionDTO) {
         ClasificacionDTO updatedClasificacion = clasificacionService.update(id, clasificacionDTO);
-        messagingTemplate.convertAndSend("/topic/clasificaciones",
-                new WebSocketMessage("UPDATE", updatedClasificacion));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.CLASIFICACIONES, updatedClasificacion);
         return updatedClasificacion;
     }
 
     @DeleteMapping("/{id}")
     public void deleteClasificacion(@PathVariable Long id) {
         clasificacionService.deleteClasificacion(id);
-        messagingTemplate.convertAndSend("/topic/clasificaciones",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.CLASIFICACIONES, id);
     }
 }

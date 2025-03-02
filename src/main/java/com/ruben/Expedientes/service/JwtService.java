@@ -2,33 +2,68 @@ package com.ruben.Expedientes.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
+import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 @Service
 public class JwtService {
 
-    private final String SECRET_KEY = "s3cr3tK3yF0rHS256312345678jjgkdo999554zzzzzzz"; // Usando key provisional
+    private final SecretKey secretKey;
+    private final long jwtExpiration;
+
+    public JwtService(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.expiration}") long jwtExpiration) {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
+        this.jwtExpiration = jwtExpiration;
+    }
 
     public String generateToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
+        return generateToken(Map.of(), username);
+    }
+
+    public String generateToken(Map<String, Object> extraClaims, String username) {
+        return buildToken(extraClaims, username, jwtExpiration);
+    }
+
+    private String buildToken(
+            Map<String, Object> extraClaims,
+            String username,
+            long expiration) {
+
+        Instant now = Instant.now();
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes(StandardCharsets.UTF_8))
+                .claims(extraClaims)
+                .subject(username)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(expiration, ChronoUnit.MILLIS)))
+                .signWith(secretKey)
                 .compact();
     }
 
-    public boolean validateToken(String token, String username) {
-        final String extractedUsername = extractClaim(token, Claims::getSubject);
-        return extractedUsername.equals(username);
+    public boolean isTokenValid(String token, String username) {
+        final String extractedUsername = extractUsername(token);
+        return (extractedUsername.equals(username)) && !isTokenExpired(token);
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -37,11 +72,10 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        try {
-            return Jwts.parser().setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8)).build()
-                    .parseClaimsJws(token).getBody();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid token", e);
-        }
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

@@ -3,6 +3,7 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.EmpresaDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.EmpresaService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class EmpresaController {
     private EmpresaService empresaService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public List<EmpresaDTO> getAllEmpresas() {
@@ -67,23 +68,20 @@ public class EmpresaController {
     @PostMapping
     public EmpresaDTO createEmpresa(@RequestBody EmpresaDTO empresaDTO) {
         EmpresaDTO savedEmpresa = empresaService.saveEmpresa(empresaDTO);
-        messagingTemplate.convertAndSend("/topic/empresas",
-                new WebSocketMessage("CREATE", savedEmpresa));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.EMPRESAS, savedEmpresa);
         return savedEmpresa;
     }
 
     @PutMapping("/{id}")
     public EmpresaDTO updateEmpresa(@PathVariable Long id, @RequestBody EmpresaDTO empresaDTO) {
         EmpresaDTO updatedEmpresa = empresaService.update(id, empresaDTO);
-        messagingTemplate.convertAndSend("/topic/empresas",
-                new WebSocketMessage("UPDATE", updatedEmpresa));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.EMPRESAS, updatedEmpresa);
         return updatedEmpresa;
     }
 
     @DeleteMapping("/{id}")
     public void deleteEmpresa(@PathVariable Long id) {
         empresaService.deleteEmpresa(id);
-        messagingTemplate.convertAndSend("/topic/empresas",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.EMPRESAS, id);
     }
 }

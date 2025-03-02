@@ -3,6 +3,7 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.model.User;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.UserService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,7 @@ public class UsersController {
     private UserService userService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -32,8 +33,7 @@ public class UsersController {
         try {
             updatedUser.setId(id);
             User user = userService.updateUser(updatedUser);
-            messagingTemplate.convertAndSend("/topic/users",
-                    new WebSocketMessage("UPDATE", user));
+            notificationService.notifyUpdated(WebSocketNotificationService.EntityType.USERS, user);
             return ResponseEntity.ok(user);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -46,8 +46,7 @@ public class UsersController {
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
-            messagingTemplate.convertAndSend("/topic/users",
-                    new WebSocketMessage("DELETE", id));
+            notificationService.notifyDeleted(WebSocketNotificationService.EntityType.USERS, id);
             return ResponseEntity.ok("Usuario eliminado con éxito");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -61,8 +60,7 @@ public class UsersController {
         try {
             String newPassword = userService.resetPassword(id);
             Optional<User> updatedUser = userService.findById(id); // Obtener el usuario actualizado
-            messagingTemplate.convertAndSend("/topic/users",
-                    new WebSocketMessage("UPDATE", updatedUser));
+            notificationService.notifyUpdated(WebSocketNotificationService.EntityType.USERS, updatedUser);
             return ResponseEntity.ok(new ResetPasswordResponse(newPassword));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

@@ -3,6 +3,7 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.ExpedienteSecundarioDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ExpedienteSecundarioService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class ExpedienteSecundarioController {
     private ExpedienteSecundarioService expedienteSecundarioService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<List<ExpedienteSecundarioDTO>> getAllExpedientesSecundarios() {
@@ -44,8 +45,7 @@ public class ExpedienteSecundarioController {
     @PostMapping
     public ResponseEntity<ExpedienteSecundarioDTO> createExpedienteSecundario(@RequestBody ExpedienteSecundarioDTO expedienteSecundarioDTO) {
         ExpedienteSecundarioDTO savedDTO = expedienteSecundarioService.saveSecundario(expedienteSecundarioDTO);
-        messagingTemplate.convertAndSend("/topic/expedientes",
-                new WebSocketMessage("CREATE", savedDTO));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.EXPEDIENTES_SECUNDARIOS, savedDTO);
         return ResponseEntity.ok(savedDTO);
     }
 
@@ -55,16 +55,14 @@ public class ExpedienteSecundarioController {
         if (updatedDTO == null) {
             return ResponseEntity.notFound().build();
         }
-        messagingTemplate.convertAndSend("/topic/expedientes",
-                new WebSocketMessage("UPDATE", updatedDTO));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.EXPEDIENTES_SECUNDARIOS, updatedDTO);
         return ResponseEntity.ok(updatedDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteExpedienteSecundario(@PathVariable Long id) {
         expedienteSecundarioService.deleteSecundario(id);
-        messagingTemplate.convertAndSend("/topic/expedientes",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.EXPEDIENTES_SECUNDARIOS, id);
         return ResponseEntity.noContent().build();
     }
 }

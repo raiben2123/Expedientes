@@ -3,6 +3,7 @@ package com.ruben.Expedientes.restcontroller;
 import com.ruben.Expedientes.dto.ExpedientePrincipalDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ExpedientePrincipalService;
+import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class ExpedientePrincipalController {
     private ExpedientePrincipalService expedientePrincipalService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketNotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<List<ExpedientePrincipalDTO>> getAllExpedientesPrincipales() {
@@ -44,8 +45,7 @@ public class ExpedientePrincipalController {
     @PostMapping
     public ResponseEntity<ExpedientePrincipalDTO> createExpedientePrincipal(@RequestBody ExpedientePrincipalDTO expedientePrincipal) {
         ExpedientePrincipalDTO savedDTO = expedientePrincipalService.savePrincipal(expedientePrincipal);
-        messagingTemplate.convertAndSend("/topic/expedientes-principales",
-                new WebSocketMessage("CREATE", savedDTO));
+        notificationService.notifyCreated(WebSocketNotificationService.EntityType.EXPEDIENTES_PRINCIPALES, savedDTO);
         return ResponseEntity.ok(savedDTO);
     }
 
@@ -55,16 +55,14 @@ public class ExpedientePrincipalController {
         if (updatedDTO == null) {
             return ResponseEntity.notFound().build();
         }
-        messagingTemplate.convertAndSend("/topic/expedientes-principales",
-                new WebSocketMessage("UPDATE", updatedDTO));
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.EXPEDIENTES_PRINCIPALES, updatedDTO);
         return ResponseEntity.ok(updatedDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteExpedientePrincipal(@PathVariable Long id) {
         expedientePrincipalService.deletePrincipal(id);
-        messagingTemplate.convertAndSend("/topic/expedientes-principales",
-                new WebSocketMessage("DELETE", id));
+        notificationService.notifyDeleted(WebSocketNotificationService.EntityType.EXPEDIENTES_PRINCIPALES, id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -3,202 +3,222 @@ package com.ruben.Expedientes.service;
 import com.ruben.Expedientes.dto.ExpedientePrincipalDTO;
 import com.ruben.Expedientes.model.*;
 import com.ruben.Expedientes.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
 public class ExpedientePrincipalService {
 
-    @Autowired
-    private ExpedientePrincipalRepository expedientePrincipalRepository;
+    private final ExpedientePrincipalRepository expedientePrincipalRepository;
+    private final EstadoExpedienteRepository estadoExpedienteRepository;
+    private final DepartamentoRepository departamentoRepository;
+    private final ClasificacionRepository clasificacionRepository;
+    private final EmpresaRepository empresaRepository;
+    private final PeticionarioRepository peticionarioRepository;
 
-    @Autowired
-    private EstadoExpedienteRepository estadoExpedienteRepository;
-
-    @Autowired
-    private DepartamentoRepository departamentoRepository;
-
-    @Autowired
-    private ClasificacionRepository clasificacionRepository;
-
-    @Autowired
-    private EmpresaRepository empresaRepository;
-
-    @Autowired
-    private PeticionarioRepository peticionarioRepository;
-
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate; // Add this for WebSocket notifications
-
+    @Transactional(readOnly = true)
     public List<ExpedientePrincipalDTO> findAll() {
         return expedientePrincipalRepository.findAll()
                 .stream()
+                .filter(ExpedientePrincipal::getActive)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public ExpedientePrincipalDTO findByIdPrincipal(Long id) {
         return expedientePrincipalRepository.findById(id)
+                .filter(ExpedientePrincipal::getActive)
                 .map(this::convertToDTO)
                 .orElse(null);
     }
 
-    public List<ExpedientePrincipalDTO> findByExpediente(String expediente) {
-        return expedientePrincipalRepository.findByExpediente(expediente)
+    @Transactional(readOnly = true)
+    public List<ExpedientePrincipalDTO> findByExpediente(String numeroExpediente) {
+        return expedientePrincipalRepository.findByNumeroExpediente(numeroExpediente)
                 .stream()
+                .filter(ExpedientePrincipal::getActive)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     public ExpedientePrincipalDTO savePrincipal(ExpedientePrincipalDTO expedientePrincipalDTO) {
-        if (expedientePrincipalDTO.getId() != null) {
-            Optional<ExpedientePrincipal> existingExpediente = expedientePrincipalRepository.findById(expedientePrincipalDTO.getId());
-            if (existingExpediente.isPresent()) {
-                return update(expedientePrincipalDTO.getId(), expedientePrincipalDTO);
+        // Validar que no existe otro expediente con el mismo número
+        if (expedientePrincipalDTO.getId() == null) {
+            boolean exists = expedientePrincipalRepository.findByNumeroExpediente(expedientePrincipalDTO.getNumeroExpediente())
+                    .stream()
+                    .anyMatch(ExpedientePrincipal::getActive);
+
+            if (exists) {
+                throw new IllegalArgumentException("Ya existe un expediente con número: " + expedientePrincipalDTO.getNumeroExpediente());
             }
         }
 
         ExpedientePrincipal expedientePrincipal = convertToEntity(expedientePrincipalDTO);
+        expedientePrincipal.setActive(true);
+        expedientePrincipal.setCreatedAt(LocalDateTime.now());
+        expedientePrincipal.setUpdatedAt(LocalDateTime.now());
+
         ExpedientePrincipal savedExpediente = expedientePrincipalRepository.save(expedientePrincipal);
-        ExpedientePrincipalDTO savedDTO = convertToDTO(savedExpediente);
-        return savedDTO;
+        log.info("ExpedientePrincipal created: {}", savedExpediente.getNumeroExpediente());
+
+        return convertToDTO(savedExpediente);
     }
 
     public void deletePrincipal(Long id) {
-        expedientePrincipalRepository.deleteById(id);
+        ExpedientePrincipal expediente = expedientePrincipalRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Expediente principal no encontrado"));
+
+        // Verificar si tiene expedientes secundarios activos
+        long expedientesSecundariosActivos = expediente.getExpedientesSecundarios()
+                .stream()
+                .mapToLong(es -> es.getActive() ? 1 : 0)
+                .sum();
+
+        if (expedientesSecundariosActivos > 0) {
+            throw new IllegalArgumentException("No se puede eliminar un expediente principal que tiene expedientes secundarios activos");
+        }
+
+        // Soft delete
+        expediente.setActive(false);
+        expediente.setUpdatedAt(LocalDateTime.now());
+        expedientePrincipalRepository.save(expediente);
+
+        log.info("ExpedientePrincipal soft deleted: {}", expediente.getNumeroExpediente());
     }
 
     public ExpedientePrincipalDTO update(Long id, ExpedientePrincipalDTO expedientePrincipalDetails) {
-        return expedientePrincipalRepository.findById(id)
-                .map(existingExpediente -> {
-                    // Update fields of the existing expediente
-                    existingExpediente.setExpediente(expedientePrincipalDetails.getExpediente());
-                    existingExpediente.setSolicitud(expedientePrincipalDetails.getSolicitud());
-                    existingExpediente.setRegistro(expedientePrincipalDetails.getRegistro());
-                    existingExpediente.setFechaRegistro(expedientePrincipalDetails.getFechaRegistro());
-                    existingExpediente.setObjeto(expedientePrincipalDetails.getObjeto());
-                    existingExpediente.setReferenciaCatastral(expedientePrincipalDetails.getReferenciaCatastral());
-                    existingExpediente.setFechaInicio(expedientePrincipalDetails.getFechaInicio());
+        ExpedientePrincipal existingExpediente = expedientePrincipalRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Expediente principal no encontrado"));
 
-                    // Update relationships
-                    existingExpediente.setEstadoExpediente(estadoExpedienteRepository.findById(expedientePrincipalDetails.getEstadoExpedienteId())
-                            .orElseThrow(() -> new RuntimeException("EstadoExpediente not found with id: " + expedientePrincipalDetails.getEstadoExpedienteId())));
-                    existingExpediente.setDepartamento(departamentoRepository.findById(expedientePrincipalDetails.getDepartamentoId())
-                            .orElseThrow(() -> new RuntimeException("Departamento not found with id: " + expedientePrincipalDetails.getDepartamentoId())));
-                    existingExpediente.setClasificacion(clasificacionRepository.findById(expedientePrincipalDetails.getClasificacionId())
-                            .orElseThrow(() -> new RuntimeException("Clasificacion not found with id: " + expedientePrincipalDetails.getClasificacionId())));
+        // Validar número de expediente único (si ha cambiado)
+        if (!existingExpediente.getNumeroExpediente().equals(expedientePrincipalDetails.getNumeroExpediente())) {
+            boolean exists = expedientePrincipalRepository.findByNumeroExpediente(expedientePrincipalDetails.getNumeroExpediente())
+                    .stream()
+                    .anyMatch(ep -> ep.getActive() && !ep.getId().equals(id));
 
-                    if (expedientePrincipalDetails.getEmpresaId() != null) {
-                        existingExpediente.setEmpresa(empresaRepository.findById(expedientePrincipalDetails.getEmpresaId())
-                                .orElseThrow(() -> new RuntimeException("Empresa not found with id: " + expedientePrincipalDetails.getEmpresaId())));
-                    } else {
-                        existingExpediente.setEmpresa(null);
-                    }
+            if (exists) {
+                throw new IllegalArgumentException("Ya existe un expediente con número: " + expedientePrincipalDetails.getNumeroExpediente());
+            }
+        }
 
-                    // Handle Peticionario, allowing null values
-                    if (expedientePrincipalDetails.getPeticionarioId() != null) {
-                        Peticionario peticionario = peticionarioRepository.findById(expedientePrincipalDetails.getPeticionarioId())
-                                .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + expedientePrincipalDetails.getPeticionarioId()));
-                        existingExpediente.setPeticionario(peticionario);
-                    } else {
-                        existingExpediente.setPeticionario(null);
-                    }
+        // Actualizar campos básicos
+        existingExpediente.setNumeroExpediente(expedientePrincipalDetails.getNumeroExpediente());
+        existingExpediente.setNumeroSolicitud(expedientePrincipalDetails.getNumeroSolicitud());
+        existingExpediente.setNumeroRegistro(expedientePrincipalDetails.getNumeroRegistro());
+        existingExpediente.setFechaRegistro(expedientePrincipalDetails.getFechaRegistro());
+        existingExpediente.setFechaInicio(expedientePrincipalDetails.getFechaInicio());
+        existingExpediente.setFechaFinalizacion(expedientePrincipalDetails.getFechaFinalizacion());
+        existingExpediente.setDescripcion(expedientePrincipalDetails.getDescripcion());
+        existingExpediente.setReferenciaCatastral(expedientePrincipalDetails.getReferenciaCatastral());
+        existingExpediente.setUbicacion(expedientePrincipalDetails.getUbicacion());
+        existingExpediente.setObservaciones(expedientePrincipalDetails.getObservaciones());
+        existingExpediente.setUpdatedAt(LocalDateTime.now());
 
-                    // Handle the list of ExpedienteSecundario IDs
-                    if (expedientePrincipalDetails.getExpedienteSecundarioIds() != null) {
-                        List<ExpedienteSecundario> expedienteSecundarios = expedientePrincipalDetails.getExpedienteSecundarioIds().stream()
-                                .map(secundarioId -> {
-                                    ExpedienteSecundario es = new ExpedienteSecundario();
-                                    es.setId(secundarioId);
-                                    return es;
-                                })
-                                .collect(Collectors.toList());
-                        existingExpediente.setExpedienteSecundarios(expedienteSecundarios);
-                    }
+        // Actualizar relaciones
+        existingExpediente.setEstado(estadoExpedienteRepository.findById(expedientePrincipalDetails.getEstadoExpedienteId())
+                .orElseThrow(() -> new NoSuchElementException("Estado de expediente no encontrado")));
 
-                    ExpedientePrincipalDTO updatedDTO = convertToDTO(expedientePrincipalRepository.save(existingExpediente));
-                    return updatedDTO;
-                })
-                .orElse(null);
+        existingExpediente.setDepartamento(departamentoRepository.findById(expedientePrincipalDetails.getDepartamentoId())
+                .orElseThrow(() -> new NoSuchElementException("Departamento no encontrado")));
+
+        existingExpediente.setClasificacion(clasificacionRepository.findById(expedientePrincipalDetails.getClasificacionId())
+                .orElseThrow(() -> new NoSuchElementException("Clasificación no encontrada")));
+
+        // Validar y actualizar peticionario/empresa (solo uno puede estar presente)
+        if (expedientePrincipalDetails.getEmpresaId() != null && expedientePrincipalDetails.getPeticionarioId() != null) {
+            throw new IllegalArgumentException("Un expediente no puede tener tanto empresa como peticionario");
+        }
+
+        if (expedientePrincipalDetails.getEmpresaId() != null) {
+            existingExpediente.setEmpresa(empresaRepository.findById(expedientePrincipalDetails.getEmpresaId())
+                    .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada")));
+            existingExpediente.setPeticionario(null);
+        } else if (expedientePrincipalDetails.getPeticionarioId() != null) {
+            existingExpediente.setPeticionario(peticionarioRepository.findById(expedientePrincipalDetails.getPeticionarioId())
+                    .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado")));
+            existingExpediente.setEmpresa(null);
+        } else {
+            throw new IllegalArgumentException("Un expediente debe tener empresa o peticionario");
+        }
+
+        ExpedientePrincipal updatedExpediente = expedientePrincipalRepository.save(existingExpediente);
+        log.info("ExpedientePrincipal updated: {}", updatedExpediente.getNumeroExpediente());
+
+        return convertToDTO(updatedExpediente);
     }
 
     private ExpedientePrincipalDTO convertToDTO(ExpedientePrincipal expedientePrincipal) {
         ExpedientePrincipalDTO dto = new ExpedientePrincipalDTO();
         dto.setId(expedientePrincipal.getId());
-        dto.setExpediente(expedientePrincipal.getExpediente());
-        dto.setSolicitud(expedientePrincipal.getSolicitud());
-        dto.setRegistro(expedientePrincipal.getRegistro());
+        dto.setNumeroExpediente(expedientePrincipal.getNumeroExpediente());
+        dto.setNumeroSolicitud(expedientePrincipal.getNumeroSolicitud());
+        dto.setNumeroRegistro(expedientePrincipal.getNumeroRegistro());
         dto.setFechaRegistro(expedientePrincipal.getFechaRegistro());
-        dto.setObjeto(expedientePrincipal.getObjeto());
+        dto.setFechaInicio(expedientePrincipal.getFechaInicio());
+        dto.setFechaFinalizacion(expedientePrincipal.getFechaFinalizacion());
+        dto.setDescripcion(expedientePrincipal.getDescripcion());
         dto.setReferenciaCatastral(expedientePrincipal.getReferenciaCatastral());
+        dto.setUbicacion(expedientePrincipal.getUbicacion());
+        dto.setObservaciones(expedientePrincipal.getObservaciones());
 
-        // Check for null to avoid NullPointerException
-        dto.setEstadoExpedienteId(expedientePrincipal.getEstadoExpediente() != null ? expedientePrincipal.getEstadoExpediente().getId() : null);
+        // IDs de relaciones
+        dto.setEstadoExpedienteId(expedientePrincipal.getEstado() != null ? expedientePrincipal.getEstado().getId() : null);
         dto.setDepartamentoId(expedientePrincipal.getDepartamento() != null ? expedientePrincipal.getDepartamento().getId() : null);
         dto.setClasificacionId(expedientePrincipal.getClasificacion() != null ? expedientePrincipal.getClasificacion().getId() : null);
         dto.setEmpresaId(expedientePrincipal.getEmpresa() != null ? expedientePrincipal.getEmpresa().getId() : null);
         dto.setPeticionarioId(expedientePrincipal.getPeticionario() != null ? expedientePrincipal.getPeticionario().getId() : null);
-        dto.setFechaInicio(expedientePrincipal.getFechaInicio());
 
-        // If expedienteSecundarios is not null, collect their IDs
-        dto.setExpedienteSecundarioIds(expedientePrincipal.getExpedienteSecundarios() != null
-                ? expedientePrincipal.getExpedienteSecundarios().stream()
-                .map(ExpedienteSecundario::getId).collect(Collectors.toList())
-                : null);
+        // Lista de IDs de expedientes secundarios activos
+        List<Long> expedientesSecundariosIds = expedientePrincipal.getExpedientesSecundarios()
+                .stream()
+                .filter(ExpedienteSecundario::getActive)
+                .map(ExpedienteSecundario::getId)
+                .collect(Collectors.toList());
+        dto.setExpedienteSecundarioIds(expedientesSecundariosIds);
+
         return dto;
     }
 
     private ExpedientePrincipal convertToEntity(ExpedientePrincipalDTO dto) {
         ExpedientePrincipal entity = new ExpedientePrincipal();
         entity.setId(dto.getId());
-        entity.setExpediente(dto.getExpediente());
-        entity.setSolicitud(dto.getSolicitud());
-        entity.setRegistro(dto.getRegistro());
+        entity.setNumeroExpediente(dto.getNumeroExpediente());
+        entity.setNumeroSolicitud(dto.getNumeroSolicitud());
+        entity.setNumeroRegistro(dto.getNumeroRegistro());
         entity.setFechaRegistro(dto.getFechaRegistro());
-        entity.setObjeto(dto.getObjeto());
-        entity.setReferenciaCatastral(dto.getReferenciaCatastral());
         entity.setFechaInicio(dto.getFechaInicio());
+        entity.setFechaFinalizacion(dto.getFechaFinalizacion());
+        entity.setDescripcion(dto.getDescripcion());
+        entity.setReferenciaCatastral(dto.getReferenciaCatastral());
+        entity.setUbicacion(dto.getUbicacion());
+        entity.setObservaciones(dto.getObservaciones());
 
-        // Load existing entities
-        entity.setEstadoExpediente(estadoExpedienteRepository.findById(dto.getEstadoExpedienteId())
-                .orElseThrow(() -> new RuntimeException("EstadoExpediente not found with id: " + dto.getEstadoExpedienteId())));
+        // Relaciones obligatorias
+        entity.setEstado(estadoExpedienteRepository.findById(dto.getEstadoExpedienteId())
+                .orElseThrow(() -> new NoSuchElementException("Estado de expediente no encontrado")));
         entity.setDepartamento(departamentoRepository.findById(dto.getDepartamentoId())
-                .orElseThrow(() -> new RuntimeException("Departamento not found with id: " + dto.getDepartamentoId())));
+                .orElseThrow(() -> new NoSuchElementException("Departamento no encontrado")));
         entity.setClasificacion(clasificacionRepository.findById(dto.getClasificacionId())
-                .orElseThrow(() -> new RuntimeException("Clasificacion not found with id: " + dto.getClasificacionId())));
+                .orElseThrow(() -> new NoSuchElementException("Clasificación no encontrada")));
 
+        // Empresa o Peticionario (solo uno)
         if (dto.getEmpresaId() != null) {
             entity.setEmpresa(empresaRepository.findById(dto.getEmpresaId())
-                    .orElseThrow(() -> new RuntimeException("Empresa not found with id: " + dto.getEmpresaId())));
-        } else {
-            entity.setEmpresa(null);
-        }
-
-        // Handle Peticionario, allowing null values
-        if (dto.getPeticionarioId() != null) {
-            Peticionario peticionario = peticionarioRepository.findById(dto.getPeticionarioId())
-                    .orElseThrow(() -> new RuntimeException("Peticionario not found with id: " + dto.getPeticionarioId()));
-            entity.setPeticionario(peticionario);
-        } else {
-            entity.setPeticionario(null);
-        }
-
-        // Handle ExpedienteSecundario relationship
-        if (dto.getExpedienteSecundarioIds() != null) {
-            List<ExpedienteSecundario> expedienteSecundarios = dto.getExpedienteSecundarioIds().stream()
-                    .map(secundarioId -> {
-                        ExpedienteSecundario es = new ExpedienteSecundario();
-                        es.setId(secundarioId);
-                        return es;
-                    })
-                    .collect(Collectors.toList());
-            entity.setExpedienteSecundarios(expedienteSecundarios);
+                    .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada")));
+        } else if (dto.getPeticionarioId() != null) {
+            entity.setPeticionario(peticionarioRepository.findById(dto.getPeticionarioId())
+                    .orElseThrow(() -> new NoSuchElementException("Peticionario no encontrado")));
         }
 
         return entity;
