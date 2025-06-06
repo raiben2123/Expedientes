@@ -54,7 +54,6 @@ public class ExpedienteSecundarioService {
     }
 
     public ExpedienteSecundarioDTO saveSecundario(ExpedienteSecundarioDTO expedienteSecundarioDTO) {
-        // Validar que el expediente principal existe y está activo
         ExpedientePrincipal expedientePrincipal = expedientePrincipalRepository
                 .findById(expedienteSecundarioDTO.getExpedientePrincipalId())
                 .orElseThrow(() -> new NoSuchElementException("Expediente principal no encontrado"));
@@ -80,7 +79,6 @@ public class ExpedienteSecundarioService {
         ExpedienteSecundario expediente = expedienteSecundarioRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Expediente secundario no encontrado"));
 
-        // Soft delete
         expediente.setActive(false);
         expediente.setUpdatedAt(LocalDateTime.now());
         expedienteSecundarioRepository.save(expediente);
@@ -92,7 +90,6 @@ public class ExpedienteSecundarioService {
         ExpedienteSecundario existingExpediente = expedienteSecundarioRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Expediente secundario no encontrado"));
 
-        // Actualizar campos básicos
         existingExpediente.setNumeroExpediente(expedienteSecundarioDetails.getNumeroExpediente());
         existingExpediente.setNumeroSolicitud(expedienteSecundarioDetails.getNumeroSolicitud());
         existingExpediente.setNumeroRegistro(expedienteSecundarioDetails.getNumeroRegistro());
@@ -105,7 +102,6 @@ public class ExpedienteSecundarioService {
         existingExpediente.setObservaciones(expedienteSecundarioDetails.getObservaciones());
         existingExpediente.setUpdatedAt(LocalDateTime.now());
 
-        // Actualizar relaciones
         existingExpediente.setEstado(estadoExpedienteRepository.findById(expedienteSecundarioDetails.getEstadoExpedienteId())
                 .orElseThrow(() -> new NoSuchElementException("Estado de expediente no encontrado")));
 
@@ -115,7 +111,6 @@ public class ExpedienteSecundarioService {
         existingExpediente.setClasificacion(clasificacionRepository.findById(expedienteSecundarioDetails.getClasificacionId())
                 .orElseThrow(() -> new NoSuchElementException("Clasificación no encontrada")));
 
-        // Validar y actualizar peticionario/empresa (solo uno puede estar presente)
         if (expedienteSecundarioDetails.getEmpresaId() != null && expedienteSecundarioDetails.getPeticionarioId() != null) {
             throw new IllegalArgumentException("Un expediente no puede tener tanto empresa como peticionario");
         }
@@ -132,7 +127,6 @@ public class ExpedienteSecundarioService {
             throw new IllegalArgumentException("Un expediente debe tener empresa o peticionario");
         }
 
-        // Actualizar expediente principal si ha cambiado
         if (!existingExpediente.getExpedientePrincipal().getId().equals(expedienteSecundarioDetails.getExpedientePrincipalId())) {
             ExpedientePrincipal nuevoPrincipal = expedientePrincipalRepository.findById(expedienteSecundarioDetails.getExpedientePrincipalId())
                     .orElseThrow(() -> new NoSuchElementException("Expediente principal no encontrado"));
@@ -150,6 +144,48 @@ public class ExpedienteSecundarioService {
         return convertToDTO(updatedExpediente);
     }
 
+    // Nuevo método para actualizar estados de múltiples expedientes secundarios
+    public List<ExpedienteSecundarioDTO> updateMultipleEstados(List<Long> ids, Long estadoExpedienteId) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("La lista de IDs no puede ser nula o vacía");
+        }
+        if (estadoExpedienteId == null) {
+            throw new IllegalArgumentException("El ID del estado del expediente no puede ser nulo");
+        }
+
+        // Validar que el estado existe
+        EstadoExpediente estado = estadoExpedienteRepository.findById(estadoExpedienteId)
+                .orElseThrow(() -> new NoSuchElementException("Estado de expediente no encontrado"));
+
+        // Buscar todos los expedientes secundarios en una sola consulta
+        List<ExpedienteSecundario> expedientes = expedienteSecundarioRepository.findAllById(ids)
+                .stream()
+                .filter(ExpedienteSecundario::getActive)
+                .toList();
+
+        // Verificar que todos los IDs solicitados existen
+        if (expedientes.size() != ids.size()) {
+            List<Long> missingIds = ids.stream()
+                    .filter(id -> expedientes.stream().noneMatch(exp -> exp.getId().equals(id)))
+                    .toList();
+            throw new NoSuchElementException("Expedientes secundarios no encontrados: " + missingIds);
+        }
+
+        // Actualizar el estado de cada expediente
+        expedientes.forEach(exp -> {
+            exp.setEstado(estado);
+            exp.setUpdatedAt(LocalDateTime.now());
+        });
+
+        // Guardar todos los cambios en una sola operación
+        List<ExpedienteSecundario> updatedExpedientes = expedienteSecundarioRepository.saveAll(expedientes);
+        log.info("Updated estados for {} expedientes secundarios", updatedExpedientes.size());
+
+        return updatedExpedientes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     private ExpedienteSecundarioDTO convertToDTO(ExpedienteSecundario expedienteSecundario) {
         ExpedienteSecundarioDTO dto = new ExpedienteSecundarioDTO();
         dto.setId(expedienteSecundario.getId());
@@ -164,7 +200,6 @@ public class ExpedienteSecundarioService {
         dto.setUbicacion(expedienteSecundario.getUbicacion());
         dto.setObservaciones(expedienteSecundario.getObservaciones());
 
-        // IDs de relaciones
         dto.setEstadoExpedienteId(expedienteSecundario.getEstado() != null ? expedienteSecundario.getEstado().getId() : null);
         dto.setDepartamentoId(expedienteSecundario.getDepartamento() != null ? expedienteSecundario.getDepartamento().getId() : null);
         dto.setClasificacionId(expedienteSecundario.getClasificacion() != null ? expedienteSecundario.getClasificacion().getId() : null);
@@ -189,7 +224,6 @@ public class ExpedienteSecundarioService {
         entity.setUbicacion(dto.getUbicacion());
         entity.setObservaciones(dto.getObservaciones());
 
-        // Relaciones obligatorias
         entity.setEstado(estadoExpedienteRepository.findById(dto.getEstadoExpedienteId())
                 .orElseThrow(() -> new NoSuchElementException("Estado de expediente no encontrado")));
         entity.setDepartamento(departamentoRepository.findById(dto.getDepartamentoId())
@@ -199,7 +233,6 @@ public class ExpedienteSecundarioService {
         entity.setExpedientePrincipal(expedientePrincipalRepository.findById(dto.getExpedientePrincipalId())
                 .orElseThrow(() -> new NoSuchElementException("Expediente principal no encontrado")));
 
-        // Empresa o Peticionario (solo uno)
         if (dto.getEmpresaId() != null) {
             entity.setEmpresa(empresaRepository.findById(dto.getEmpresaId())
                     .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada")));

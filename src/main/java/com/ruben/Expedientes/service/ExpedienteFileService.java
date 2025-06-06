@@ -25,7 +25,6 @@ public class ExpedienteFileService {
 
     private final ExpedienteFileRepository fileRepository;
 
-    // Tipos de archivo permitidos
     private static final List<String> ALLOWED_CONTENT_TYPES = Arrays.asList(
             "application/pdf",
             "image/jpeg",
@@ -38,12 +37,9 @@ public class ExpedienteFileService {
             "text/plain"
     );
 
-    // Tamaño máximo: 10MB
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-    /**
-     * Subir archivo a un expediente
-     */
+    @Transactional
     public ExpedienteFileDTO uploadFile(
             MultipartFile file,
             String expedienteType,
@@ -52,37 +48,33 @@ public class ExpedienteFileService {
             String description,
             String uploadedBy) throws IOException {
 
-        // Validaciones
         validateFile(file);
         validateExpedienteType(expedienteType);
 
-        // Crear nombre único para el archivo
-        String storedFileName = generateUniqueFileName(file.getOriginalFilename());
-
-        // Crear entidad
         ExpedienteFile expedienteFile = ExpedienteFile.builder()
                 .originalFileName(file.getOriginalFilename())
-                .storedFileName(storedFileName)
+                .storedFileName(generateUniqueFileName(file.getOriginalFilename()))
                 .contentType(file.getContentType())
                 .fileSize(file.getSize())
-                .fileData(file.getBytes())
                 .expedienteType(expedienteType.toUpperCase())
                 .expedienteId(expedienteId)
                 .category(category)
                 .description(description)
                 .uploadedBy(uploadedBy)
+                .fileData(file.getBytes()) // Asegurarse de que esto se establece correctamente
+                .uploadedAt(LocalDateTime.now())
                 .build();
 
-        ExpedienteFile savedFile = fileRepository.save(expedienteFile);
-        log.info("File uploaded: {} for expediente {} ({})",
-                file.getOriginalFilename(), expedienteId, expedienteType);
-
-        return convertToDTO(savedFile, false); // Sin datos del archivo en la respuesta
+        try {
+            ExpedienteFile savedFile = fileRepository.save(expedienteFile);
+            log.info("Archivo guardado correctamente: {}", savedFile.getId());
+            return convertToDTO(savedFile, false);
+        } catch (Exception e) {
+            log.error("Error al guardar el archivo: {}", e.getMessage(), e);
+            throw new RuntimeException("Error al guardar el archivo", e);
+        }
     }
 
-    /**
-     * Obtener archivos de un expediente
-     */
     @Transactional(readOnly = true)
     public List<ExpedienteFileDTO> getFilesByExpediente(String expedienteType, Long expedienteId) {
         validateExpedienteType(expedienteType);
@@ -95,18 +87,12 @@ public class ExpedienteFileService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Descargar archivo por ID
-     */
     @Transactional(readOnly = true)
     public Optional<ExpedienteFileDTO> downloadFile(Long fileId) {
         return fileRepository.findById(fileId)
-                .map(file -> convertToDTO(file, true)); // Con datos del archivo
+                .map(file -> convertToDTO(file, true));
     }
 
-    /**
-     * Eliminar archivo
-     */
     public boolean deleteFile(Long fileId, String requestedBy) {
         Optional<ExpedienteFile> fileOpt = fileRepository.findById(fileId);
         if (fileOpt.isPresent()) {
@@ -117,9 +103,6 @@ public class ExpedienteFileService {
         return false;
     }
 
-    /**
-     * Obtener estadísticas de archivos
-     */
     @Transactional(readOnly = true)
     public FileStatisticsDTO getFileStatistics(String expedienteType, Long expedienteId) {
         validateExpedienteType(expedienteType);
@@ -136,8 +119,6 @@ public class ExpedienteFileService {
                 .totalSizeMB(totalSizeBytes / (1024.0 * 1024.0))
                 .build();
     }
-
-    // Métodos privados de utilidad
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {

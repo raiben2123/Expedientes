@@ -78,4 +78,24 @@ public interface ExpedienteFileRepository extends JpaRepository<ExpedienteFile, 
                AND NOT EXISTS (SELECT 1 FROM expedientes_secundarios es WHERE es.id = f.expediente_id))
         """, nativeQuery = true)
     List<ExpedienteFile> findOrphanedFiles();
+
+    @Query(value = """
+    INSERT INTO expediente_files (
+        category, content_type, description, expediente_id, expediente_type,
+        file_data, file_size, original_file_name, stored_file_name, uploaded_at, uploaded_by
+    ) VALUES (
+        :#{#file.category}, 
+        :#{#file.contentType}, 
+        :#{#file.description}, 
+        :#{#file.expedienteId}, 
+        :#{#file.expedienteType},
+        :#{#file.fileData}, 
+        :#{#file.fileSize}, 
+        :#{#file.originalFileName}, 
+        :#{#file.storedFileName}, 
+        :#{#file.uploadedAt}, 
+        :#{#file.uploadedBy}
+    ) RETURNING *
+    """, nativeQuery = true)
+    ExpedienteFile saveFile(@Param("file") ExpedienteFile file);
 }

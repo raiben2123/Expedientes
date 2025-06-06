@@ -1,12 +1,11 @@
 package com.ruben.Expedientes.restcontroller;
 
 import com.ruben.Expedientes.dto.ClasificacionDTO;
-import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ClasificacionService;
 import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.NoSuchElementException;
 

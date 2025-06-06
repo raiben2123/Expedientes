@@ -1,6 +1,7 @@
 package com.ruben.Expedientes.restcontroller;
 
 import com.ruben.Expedientes.dto.ExpedientePrincipalDTO;
+import com.ruben.Expedientes.dto.UpdateEstadoDTO;
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ExpedientePrincipalService;
 import com.ruben.Expedientes.service.WebSocketNotificationService;
@@ -52,6 +53,16 @@ public class ExpedientePrincipalController {
     @PutMapping("/{id}")
     public ResponseEntity<ExpedientePrincipalDTO> updateExpedientePrincipal(@PathVariable Long id, @RequestBody ExpedientePrincipalDTO expedientePrincipal) {
         ExpedientePrincipalDTO updatedDTO = expedientePrincipalService.update(id, expedientePrincipal);
+        if (updatedDTO == null) {
+            return ResponseEntity.notFound().build();
+        }
+        notificationService.notifyUpdated(WebSocketNotificationService.EntityType.EXPEDIENTES_PRINCIPALES, updatedDTO);
+        return ResponseEntity.ok(updatedDTO);
+    }
+
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<ExpedientePrincipalDTO> updateEstadoExpedientePrincipal(@PathVariable Long id, @RequestBody UpdateEstadoDTO updateEstadoDTO) {
+        ExpedientePrincipalDTO updatedDTO = expedientePrincipalService.updateEstado(id, updateEstadoDTO.getEstadoExpedienteId());
         if (updatedDTO == null) {
             return ResponseEntity.notFound().build();
         }

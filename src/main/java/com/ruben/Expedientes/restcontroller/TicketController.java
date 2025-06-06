@@ -1,13 +1,12 @@
 package com.ruben.Expedientes.restcontroller;
 
+import com.ruben.Expedientes.dto.TicketDTO;
 import com.ruben.Expedientes.model.Ticket;
-import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.JwtService;
 import com.ruben.Expedientes.service.TicketService;
 import com.ruben.Expedientes.service.WebSocketNotificationService;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +25,19 @@ public class TicketController {
     @Autowired
     private WebSocketNotificationService notificationService;
 
+    @GetMapping
+    public ResponseEntity<List<TicketDTO>> getAllTickets(@RequestHeader(value = "Authorization", required = false) String token) {
+        try {
+            if (token == null || !token.startsWith("Bearer ")) {
+                throw new IllegalArgumentException("Token ausente o inválido");
+            }
+            String username = extractUsernameFromToken(token);
+            return ResponseEntity.ok(ticketService.getAllTickets());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(null);
+        }
+    }
+
     @PostMapping
     public ResponseEntity<?> createTicket(@RequestBody Ticket ticket, @RequestHeader("Authorization") String token) {
         try {
@@ -38,11 +50,6 @@ public class TicketController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error al crear el ticket");
         }
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Ticket>> getAllTickets() {
-        return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
     @PutMapping("/{id}")

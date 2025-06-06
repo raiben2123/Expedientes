@@ -23,7 +23,7 @@ public class AuthController {
         if (userService.validateUser(username, password)) { // Verifica las credenciales
             User user = userService.findByUsername(username); // Obtenemos el usuario completo
             String token = jwtService.generateToken(username);
-            return ResponseEntity.ok(new AuthResponse(token, user.getRole().name())); // Devolvemos token y rol
+            return ResponseEntity.ok(new AuthResponse(token, user.getRole().name(), user.getId()));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
         }
@@ -38,10 +38,12 @@ public class AuthController {
     private static class AuthResponse {
         private String token;
         private String role;
+        private Long id;
 
-        public AuthResponse(String token, String role) {
+        public AuthResponse(String token, String role, Long id) {
             this.token = token;
             this.role = role;
+            this.id = id;
         }
 
         public String getToken() {
@@ -50,6 +52,10 @@ public class AuthController {
 
         public String getRole() {
             return role;
+        }
+
+        public Long getId() {
+            return id;
         }
     }
 }

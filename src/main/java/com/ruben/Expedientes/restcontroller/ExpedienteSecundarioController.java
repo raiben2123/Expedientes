@@ -1,11 +1,11 @@
 package com.ruben.Expedientes.restcontroller;
 
 import com.ruben.Expedientes.dto.ExpedienteSecundarioDTO;
+import com.ruben.Expedientes.dto.UpdateEstadoSecundariosDTO; // Nuevo DTO
 import com.ruben.Expedientes.model.WebSocketMessage;
 import com.ruben.Expedientes.service.ExpedienteSecundarioService;
 import com.ruben.Expedientes.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,6 +57,14 @@ public class ExpedienteSecundarioController {
         }
         notificationService.notifyUpdated(WebSocketNotificationService.EntityType.EXPEDIENTES_SECUNDARIOS, updatedDTO);
         return ResponseEntity.ok(updatedDTO);
+    }
+
+    // Nuevo endpoint para actualizar estados de múltiples expedientes secundarios
+    @PutMapping("/update-estados")
+    public ResponseEntity<List<ExpedienteSecundarioDTO>> updateMultipleEstados(@RequestBody UpdateEstadoSecundariosDTO updateDTO) {
+        List<ExpedienteSecundarioDTO> updatedDTOs = expedienteSecundarioService.updateMultipleEstados(updateDTO.getIds(), updateDTO.getEstadoExpedienteId());
+        updatedDTOs.forEach(dto -> notificationService.notifyUpdated(WebSocketNotificationService.EntityType.EXPEDIENTES_SECUNDARIOS, dto));
+        return ResponseEntity.ok(updatedDTOs);
     }
 
     @DeleteMapping("/{id}")

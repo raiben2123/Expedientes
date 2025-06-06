@@ -1,5 +1,6 @@
 package com.ruben.Expedientes.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DepartamentoDTO {
     private Long id;
     private String name;
@@ -15,5 +17,7 @@ public class DepartamentoDTO {
     private List<Long> expedienteSecundarioList; // Solo el ID, para evitar sobrecarga de datos
 
     public DepartamentoDTO(Long id, String name) {
+        this.id = id;
+        this.name = name;
     }
 }

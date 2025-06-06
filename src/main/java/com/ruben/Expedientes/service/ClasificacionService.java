@@ -15,8 +15,6 @@ public class ClasificacionService {
     @Autowired
     private ClasificacionRepository clasificacionRepository;
 
-    // Eliminamos la inyección de SimpMessagingTemplate ya que no lo usaremos aquí
-
     public ClasificacionDTO findById(Long id) {
         return clasificacionRepository.findById(id)
                 .map(this::convertToDTO)

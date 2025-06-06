@@ -157,6 +157,23 @@ public class ExpedientePrincipalService {
 
         return convertToDTO(updatedExpediente);
     }
+    
+    public ExpedientePrincipalDTO updateEstado(Long id, Long estadoExpedienteId) {
+        log.info("Actualizando estado del expediente principal ID: {} a estado ID: {}", id, estadoExpedienteId);
+        
+        ExpedientePrincipal existingExpediente = expedientePrincipalRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Expediente principal no encontrado"));
+
+        // Solo actualizar el estado
+        existingExpediente.setEstado(estadoExpedienteRepository.findById(estadoExpedienteId)
+                .orElseThrow(() -> new NoSuchElementException("Estado de expediente no encontrado")));
+        existingExpediente.setUpdatedAt(LocalDateTime.now());
+
+        ExpedientePrincipal updatedExpediente = expedientePrincipalRepository.save(existingExpediente);
+        log.info("Estado del ExpedientePrincipal actualizado: {}", updatedExpediente.getNumeroExpediente());
+
+        return convertToDTO(updatedExpediente);
+    }
 
     private ExpedientePrincipalDTO convertToDTO(ExpedientePrincipal expedientePrincipal) {
         ExpedientePrincipalDTO dto = new ExpedientePrincipalDTO();

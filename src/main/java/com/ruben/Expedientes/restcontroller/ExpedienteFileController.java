@@ -22,6 +22,7 @@ import java.util.Optional;
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "http://143.131.204.234:*"}, allowCredentials = "true")
 public class ExpedienteFileController {
 
     private final ExpedienteFileService fileService;
@@ -38,18 +39,40 @@ public class ExpedienteFileController {
             @RequestParam(value = "category", required = false, defaultValue = "GENERAL") String category,
             @RequestParam(value = "description", required = false) String description,
             Authentication authentication) {
-
+        
+        log.info("Iniciando subida de archivo: {} para expediente {} tipo {}", 
+                file.getOriginalFilename(), expedienteId, expedienteType);
+        
         try {
+            // Validaciones básicas
+            if (file.isEmpty()) {
+                log.warn("Archivo vacío recibido");
+                return ResponseEntity.badRequest().body(new ErrorResponse("El archivo no puede estar vacío"));
+            }
+
+            if (authentication == null || authentication.getName() == null) {
+                log.warn("Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("Usuario no autenticado"));
+            }
+
             String uploadedBy = authentication.getName();
+            log.info("Usuario autenticado: {}", uploadedBy);
 
             ExpedienteFileDTO uploadedFile = fileService.uploadFile(
                     file, expedienteType, expedienteId, category, description, uploadedBy);
 
+            log.info("Archivo subido exitosamente con ID: {}", uploadedFile.getId());
+
             // Notificar via WebSocket
-            notificationService.broadcast(
-                    "/topic/files/" + expedienteType.toLowerCase() + "/" + expedienteId,
-                    new FileNotification("UPLOADED", uploadedFile)
-            );
+            try {
+                notificationService.broadcast(
+                        "/topic/files/" + expedienteType.toLowerCase() + "/" + expedienteId,
+                        new FileNotification("UPLOADED", uploadedFile)
+                );
+            } catch (Exception e) {
+                log.warn("Error enviando notificación WebSocket: {}", e.getMessage());
+                // No afecta la subida del archivo
+            }
 
             return ResponseEntity.status(HttpStatus.CREATED).body(uploadedFile);
 
@@ -58,9 +81,14 @@ public class ExpedienteFileController {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
 
         } catch (IOException e) {
-            log.error("Error uploading file: {}", e.getMessage());
+            log.error("Error de IO al subir archivo: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al procesar el archivo"));
+                    .body(new ErrorResponse("Error al procesar el archivo: " + e.getMessage()));
+                    
+        } catch (Exception e) {
+            log.error("Error inesperado al subir archivo: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error interno del servidor"));
         }
     }
 
@@ -73,11 +101,16 @@ public class ExpedienteFileController {
             @PathVariable Long expedienteId) {
 
         try {
+            log.info("Obteniendo archivos para expediente {} tipo {}", expedienteId, expedienteType);
             List<ExpedienteFileDTO> files = fileService.getFilesByExpediente(expedienteType, expedienteId);
             return ResponseEntity.ok(files);
 
         } catch (IllegalArgumentException e) {
+            log.warn("Parámetros inválidos: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error obteniendo archivos: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -87,22 +120,30 @@ public class ExpedienteFileController {
     @GetMapping("/download/{fileId}")
     public ResponseEntity<?> downloadFile(@PathVariable Long fileId) {
 
-        Optional<ExpedienteFileDTO> fileOpt = fileService.downloadFile(fileId);
+        try {
+            log.info("Descargando archivo con ID: {}", fileId);
+            Optional<ExpedienteFileDTO> fileOpt = fileService.downloadFile(fileId);
 
-        if (fileOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            if (fileOpt.isEmpty()) {
+                log.warn("Archivo no encontrado: {}", fileId);
+                return ResponseEntity.notFound().build();
+            }
+
+            ExpedienteFileDTO file = fileOpt.get();
+            ByteArrayResource resource = new ByteArrayResource(file.getFileData());
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(file.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + file.getOriginalFileName() + "\"")
+                    .contentLength(file.getFileSize())
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("Error descargando archivo {}: {}", fileId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al descargar el archivo"));
         }
-
-        ExpedienteFileDTO file = fileOpt.get();
-
-        ByteArrayResource resource = new ByteArrayResource(file.getFileData());
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(file.getContentType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + file.getOriginalFileName() + "\"")
-                .contentLength(file.getFileSize())
-                .body(resource);
     }
 
     /**
@@ -113,19 +154,37 @@ public class ExpedienteFileController {
             @PathVariable Long fileId,
             Authentication authentication) {
 
-        String requestedBy = authentication.getName();
-        boolean deleted = fileService.deleteFile(fileId, requestedBy);
+        try {
+            if (authentication == null || authentication.getName() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Usuario no autenticado"));
+            }
 
-        if (deleted) {
-            // Notificar via WebSocket
-            notificationService.broadcast(
-                    "/topic/files/deleted",
-                    new FileNotification("DELETED", fileId)
-            );
+            String requestedBy = authentication.getName();
+            log.info("Eliminando archivo {} solicitado por {}", fileId, requestedBy);
+            
+            boolean deleted = fileService.deleteFile(fileId, requestedBy);
 
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
+            if (deleted) {
+                // Notificar via WebSocket
+                try {
+                    notificationService.broadcast(
+                            "/topic/files/deleted",
+                            new FileNotification("DELETED", fileId)
+                    );
+                } catch (Exception e) {
+                    log.warn("Error enviando notificación de eliminación: {}", e.getMessage());
+                }
+
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+
+        } catch (Exception e) {
+            log.error("Error eliminando archivo {}: {}", fileId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al eliminar el archivo"));
         }
     }
 
@@ -138,12 +197,17 @@ public class ExpedienteFileController {
             @PathVariable Long expedienteId) {
 
         try {
+            log.info("Obteniendo estadísticas para expediente {} tipo {}", expedienteId, expedienteType);
             ExpedienteFileService.FileStatisticsDTO stats =
                     fileService.getFileStatistics(expedienteType, expedienteId);
             return ResponseEntity.ok(stats);
 
         } catch (IllegalArgumentException e) {
+            log.warn("Parámetros inválidos para estadísticas: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error obteniendo estadísticas: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

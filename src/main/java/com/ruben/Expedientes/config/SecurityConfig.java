@@ -4,6 +4,7 @@ import com.ruben.Expedientes.filter.JwtRequestFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -42,15 +43,50 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos
+                        // ✅ ENDPOINTS PÚBLICOS
                         .requestMatchers("/api/login", "/api/register").permitAll()
-                        // WebSocket endpoints
+                        .requestMatchers("/actuator/health").permitAll()
+
+                        // ✅ WEBSOCKET ENDPOINTS (públicos para la conexión inicial)
                         .requestMatchers("/ws/**").permitAll()
-                        // Endpoints de administración
+                        .requestMatchers("/topic/**").permitAll()
+                        .requestMatchers("/app/**").permitAll()
+
+                        // ✅ ENDPOINTS DE CHAT (requieren autenticación)
+                        .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/conversations").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/conversations/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/chat/messages").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/chat/messages/read/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/chat/messages/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/chat/search").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/users").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/unread-count").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/statistics").authenticated()
+
+                        // ✅ ENDPOINTS DE EXPEDIENTES (autenticados)
+                        .requestMatchers("/api/expedientesprincipales/**").authenticated()
+                        .requestMatchers("/api/expedientessecundarios/**").authenticated()
+                        .requestMatchers("/api/peticionarios/**").authenticated()
+                        .requestMatchers("/api/empresas/**").authenticated()
+                        .requestMatchers("/api/clasificaciones/**").authenticated()
+                        .requestMatchers("/api/departamentos/**").authenticated()
+                        .requestMatchers("/api/estadosexpedientes/**").authenticated()
+
+                        // ✅ ENDPOINTS DE ARCHIVOS (autenticados)
+                        .requestMatchers(HttpMethod.POST, "/api/files/upload").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/files/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/files/**").authenticated()
+
+                        // ✅ ENDPOINTS DE TICKETS (autenticados)
+                        .requestMatchers("/api/tickets/**").authenticated()
+
+                        // ✅ ENDPOINTS DE ADMINISTRACIÓN (solo ADMIN)
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        // Actuator endpoints (si los usas)
+                        .requestMatchers("/api/register").hasRole("ADMIN")
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
-                        // Resto de endpoints requieren autenticación
+
+                        // ✅ RESTO DE ENDPOINTS (requieren autenticación)
                         .anyRequest().authenticated()
                 );
 
@@ -60,11 +96,46 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+
+        // Permitir orígenes específicos - MEJORADO
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://143.131.204.234:*",
+                "https://143.131.204.234:*",
+                "*" // Temporal para debugging - cambiar en producción
+        ));
+
+        // Métodos permitidos
+        configuration.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
+
+        // Headers permitidos - AMPLIADO
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", 
+                "Content-Type", 
+                "X-Requested-With", 
+                "Accept", 
+                "Origin", 
+                "Access-Control-Request-Method", 
+                "Access-Control-Request-Headers",
+                "*"
+        ));
+
+        // Permitir credenciales
         configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(List.of("Authorization"));
+
+        // Headers expuestos
+        configuration.setExposedHeaders(List.of(
+                "Authorization", 
+                "Content-Disposition", 
+                "Content-Type",
+                "Content-Length"
+        ));
+
+        // Tiempo de caché para preflight requests
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -86,6 +157,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // Increased strength
+        return new BCryptPasswordEncoder(12);
     }
 }
